@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+const path = require('path');
+const { execSync } = require('child_process');
+
+// Get the directory where this script is located
+const scriptDir = path.dirname(__filename);
+const projectRoot = path.join(scriptDir, '..');
+
+// Build the project if dist doesn't exist or is empty
+const distPath = path.join(projectRoot, 'dist');
+try {
+  require('fs').accessSync(path.join(distPath, 'index.js'));
+} catch (error) {
+  console.log('Building project...');
+  execSync('npm run build', { cwd: projectRoot, stdio: 'inherit' });
+}
+
+// Run the compiled application
+require(path.join(distPath, 'index.js'));

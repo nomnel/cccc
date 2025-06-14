@@ -1,3 +1,3 @@
-console.log("Hello, TypeScript!");
+console.log("hello world");
 
 export {};
