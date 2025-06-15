@@ -10,8 +10,12 @@ import type { Session } from "./types.js";
 vi.mock("ink", () => {
 	const mockUseInput = vi.fn();
 	return {
-		Box: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children),
-		Text: ({ children, color }: { children: React.ReactNode; color?: string }) =>
+		Box: ({ children }: { children: React.ReactNode }) =>
+			React.createElement("div", null, children),
+		Text: ({
+			children,
+			color,
+		}: { children: React.ReactNode; color?: string }) =>
 			React.createElement("span", { "data-color": color }, children),
 		useInput: mockUseInput,
 	};
@@ -195,7 +199,10 @@ describe("Menu", () => {
 			);
 
 			expect(mockUseInput).toHaveBeenCalledTimes(1);
-			expect(typeof mockUseInput.mock.calls[0][0]).toBe("function");
+			expect(mockUseInput.mock.calls).toHaveLength(1);
+			const firstCall = mockUseInput.mock.calls[0];
+			expect(firstCall).toBeDefined();
+			expect(typeof firstCall?.[0]).toBe("function");
 		});
 
 		it("上矢印キーで選択インデックスが正しく変更される", () => {
@@ -216,11 +223,14 @@ describe("Menu", () => {
 				}),
 			);
 
-			const inputHandler = mockUseInput.mock.calls[0][0];
+			const firstCall = mockUseInput.mock.calls[0];
+			expect(firstCall).toBeDefined();
+			const inputHandler = firstCall?.[0];
+			expect(inputHandler).toBeDefined();
 
 			// 上矢印キーを押した時の処理をテスト
 			// 最初のインデックス(0)から上に行くと最後のインデックスになる
-			inputHandler("", { upArrow: true });
+			inputHandler?.("", { upArrow: true });
 
 			// この時点で最後のオプション(EXIT)が選択されるはず
 			// 実際の状態変更は内部的に処理されるため、
@@ -239,10 +249,13 @@ describe("Menu", () => {
 				}),
 			);
 
-			const inputHandler = mockUseInput.mock.calls[0][0];
+			const firstCall = mockUseInput.mock.calls[0];
+			expect(firstCall).toBeDefined();
+			const inputHandler = firstCall?.[0];
+			expect(inputHandler).toBeDefined();
 
 			// 下矢印キーを押した時の処理をテスト
-			inputHandler("", { downArrow: true });
+			inputHandler?.("", { downArrow: true });
 
 			expect(mockUseInput).toHaveBeenCalled();
 		});
@@ -258,11 +271,14 @@ describe("Menu", () => {
 				}),
 			);
 
-			const inputHandler = mockUseInput.mock.calls[0][0];
+			const firstCall = mockUseInput.mock.calls[0];
+			expect(firstCall).toBeDefined();
+			const inputHandler = firstCall?.[0];
+			expect(inputHandler).toBeDefined();
 
 			// Enterキーを押した時の処理をテスト
 			// 最初のオプション（START）が選択されているはず
-			inputHandler("", { return: true });
+			inputHandler?.("", { return: true });
 
 			expect(mockUseInput).toHaveBeenCalled();
 		});
