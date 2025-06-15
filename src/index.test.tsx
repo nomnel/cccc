@@ -148,7 +148,7 @@ describe("App", () => {
 
 			// テスト用のAppコンポーネントを作成
 			const indexModule = await import("./index.js");
-		const App = indexModule.default;
+			const App = indexModule.default;
 			// render関数をモックしているので直接テストは困難
 			// 代わりにモックが正しく呼ばれることを確認
 			expect(MockMenu).toBeDefined();
@@ -197,10 +197,14 @@ describe("App", () => {
 			MockMenu.mockImplementation(({ onSelect, sessions }) => {
 				// STARTオプション選択をシミュレート
 				setTimeout(() => onSelect("start"), 0);
-				return React.createElement("div", {
-					"data-testid": "menu",
-					"data-sessions": JSON.stringify(sessions)
-				}, "Menu");
+				return React.createElement(
+					"div",
+					{
+						"data-testid": "menu",
+						"data-sessions": JSON.stringify(sessions),
+					},
+					"Menu",
+				);
 			});
 
 			await import("./index.js");
@@ -268,10 +272,14 @@ describe("App", () => {
 
 			MockMenu.mockImplementation(({ onSelect, sessions }) => {
 				setTimeout(() => onSelect("invalid-option"), 0);
-				return React.createElement("div", {
-					"data-testid": "menu",
-					"data-sessions": JSON.stringify(sessions || [])
-				}, "Menu");
+				return React.createElement(
+					"div",
+					{
+						"data-testid": "menu",
+						"data-sessions": JSON.stringify(sessions || []),
+					},
+					"Menu",
+				);
 			});
 
 			expect(async () => {

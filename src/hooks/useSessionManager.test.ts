@@ -78,6 +78,7 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess as IPty,
+					outputs: [],
 				});
 			});
 
@@ -95,6 +96,7 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess1 as IPty,
+					outputs: [],
 				});
 			});
 
@@ -102,6 +104,7 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as IPty,
+					outputs: [],
 				});
 			});
 
@@ -122,10 +125,12 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess1 as any,
+					outputs: [],
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as any,
+					outputs: [],
 				});
 			});
 
@@ -146,6 +151,7 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess as any,
+					outputs: [],
 				});
 			});
 
@@ -166,6 +172,7 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess as any,
+					outputs: [],
 				});
 			});
 
@@ -216,6 +223,135 @@ describe("useSessionManager", () => {
 		});
 	});
 
+	describe("セッション出力の追加", () => {
+		it("指定されたセッションに出力を追加できる", () => {
+			const { result } = renderHook(() => useSessionManager());
+			const mockProcess = createMockPtyProcess();
+
+			// セッションを追加
+			act(() => {
+				result.current.addSession({
+					id: "session-1",
+					process: mockProcess as any,
+					outputs: [],
+				});
+			});
+
+			// 出力を追加
+			act(() => {
+				result.current.appendOutput("session-1", "Hello World\n");
+			});
+
+			const session = result.current.findSession("session-1");
+			expect(session?.outputs).toEqual(["Hello World\n"]);
+		});
+
+		it("複数の出力を順番に追加できる", () => {
+			const { result } = renderHook(() => useSessionManager());
+			const mockProcess = createMockPtyProcess();
+
+			// セッションを追加
+			act(() => {
+				result.current.addSession({
+					id: "session-1",
+					process: mockProcess as any,
+					outputs: [],
+				});
+			});
+
+			// 複数の出力を追加
+			act(() => {
+				result.current.appendOutput("session-1", "Line 1\n");
+				result.current.appendOutput("session-1", "Line 2\n");
+				result.current.appendOutput("session-1", "Line 3\n");
+			});
+
+			const session = result.current.findSession("session-1");
+			expect(session?.outputs).toEqual(["Line 1\n", "Line 2\n", "Line 3\n"]);
+		});
+
+		it("既存の出力がある場合は追加される", () => {
+			const { result } = renderHook(() => useSessionManager());
+			const mockProcess = createMockPtyProcess();
+
+			// 既存の出力があるセッションを追加
+			act(() => {
+				result.current.addSession({
+					id: "session-1",
+					process: mockProcess as any,
+					outputs: ["Existing output\n"],
+				});
+			});
+
+			// 新しい出力を追加
+			act(() => {
+				result.current.appendOutput("session-1", "New output\n");
+			});
+
+			const session = result.current.findSession("session-1");
+			expect(session?.outputs).toEqual(["Existing output\n", "New output\n"]);
+		});
+
+		it("存在しないセッションIDに対しては何も起こらない", () => {
+			const { result } = renderHook(() => useSessionManager());
+			const mockProcess = createMockPtyProcess();
+
+			// セッションを追加
+			act(() => {
+				result.current.addSession({
+					id: "session-1",
+					process: mockProcess as any,
+					outputs: [],
+				});
+			});
+
+			// 存在しないセッションに出力を追加
+			act(() => {
+				result.current.appendOutput("non-existent", "Test output\n");
+			});
+
+			// 既存のセッションには影響なし
+			const session = result.current.findSession("session-1");
+			expect(session?.outputs).toEqual([]);
+		});
+
+		it("複数のセッションで独立して出力を管理できる", () => {
+			const { result } = renderHook(() => useSessionManager());
+			const mockProcess1 = createMockPtyProcess();
+			const mockProcess2 = createMockPtyProcess();
+
+			// 2つのセッションを追加
+			act(() => {
+				result.current.addSession({
+					id: "session-1",
+					process: mockProcess1 as any,
+					outputs: [],
+				});
+				result.current.addSession({
+					id: "session-2",
+					process: mockProcess2 as any,
+					outputs: [],
+				});
+			});
+
+			// それぞれのセッションに異なる出力を追加
+			act(() => {
+				result.current.appendOutput("session-1", "Session 1 output\n");
+				result.current.appendOutput("session-2", "Session 2 output\n");
+				result.current.appendOutput("session-1", "More for session 1\n");
+			});
+
+			const session1 = result.current.findSession("session-1");
+			const session2 = result.current.findSession("session-2");
+
+			expect(session1?.outputs).toEqual([
+				"Session 1 output\n",
+				"More for session 1\n",
+			]);
+			expect(session2?.outputs).toEqual(["Session 2 output\n"]);
+		});
+	});
+
 	describe("全セッション終了", () => {
 		it("すべてのセッションのプロセスを終了し、リストをクリアする", () => {
 			const { result } = renderHook(() => useSessionManager());
@@ -227,10 +363,12 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess1 as any,
+					outputs: [],
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as any,
+					outputs: [],
 				});
 			});
 

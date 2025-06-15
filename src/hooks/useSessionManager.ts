@@ -47,6 +47,19 @@ export const useSessionManager = () => {
 		setSessions([]);
 	}, [sessions]);
 
+	const appendOutput = React.useCallback(
+		(sessionId: string, output: string) => {
+			setSessions((prev) =>
+				prev.map((session) =>
+					session.id === sessionId
+						? { ...session, outputs: [...session.outputs, output] }
+						: session,
+				),
+			);
+		},
+		[],
+	);
+
 	return {
 		sessions,
 		currentScreen,
@@ -58,5 +71,6 @@ export const useSessionManager = () => {
 		switchToMenu,
 		switchToSession,
 		killAllSessions,
+		appendOutput,
 	};
 };

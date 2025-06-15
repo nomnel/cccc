@@ -26,10 +26,18 @@ export const useTerminalController = () => {
 	}, []);
 
 	const setupProcessListeners = React.useCallback(
-		(ptyProcess: pty.IPty, onExit?: () => void): EventListeners => {
+		(
+			ptyProcess: pty.IPty,
+			onExit?: () => void,
+			onData?: (data: string) => void,
+		): EventListeners => {
 			// Handle output
 			const dataDisposable = ptyProcess.onData((data) => {
 				process.stdout.write(data);
+				// Call the onData callback if provided
+				if (onData) {
+					onData(data);
+				}
 			});
 
 			// Handle input

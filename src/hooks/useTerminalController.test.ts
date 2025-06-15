@@ -250,7 +250,10 @@ describe("useTerminalController", () => {
 			const mockOnExit = vi.fn();
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess, mockOnExit);
+			const listeners = result.current.setupProcessListeners(
+				mockPtyProcess,
+				mockOnExit,
+			);
 
 			expect(mockPtyProcess.onExit).toHaveBeenCalled();
 

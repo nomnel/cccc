@@ -20,6 +20,7 @@ const App: React.FC = () => {
 		switchToMenu,
 		switchToSession,
 		killAllSessions,
+		appendOutput,
 	} = useSessionManager();
 
 	const { setListeners, cleanupListeners } = useEventListeners();
@@ -44,14 +45,24 @@ const App: React.FC = () => {
 
 		const ptyProcess = createPtyProcess(args);
 
-		const listeners = setupProcessListeners(ptyProcess, () => {
-			removeSession(sessionId);
-			clearScreen();
-			switchToMenu();
-		});
+		const listeners = setupProcessListeners(
+			ptyProcess,
+			() => {
+				removeSession(sessionId);
+				clearScreen();
+				switchToMenu();
+			},
+			(data) => {
+				appendOutput(sessionId, data);
+			},
+		);
 
 		setListeners(listeners);
-		const newSession: Session = { id: sessionId, process: ptyProcess };
+		const newSession: Session = {
+			id: sessionId,
+			process: ptyProcess,
+			outputs: [],
+		};
 		addSession(newSession);
 		switchToSession(sessionId);
 	}, [
@@ -64,6 +75,7 @@ const App: React.FC = () => {
 		removeSession,
 		switchToSession,
 		switchToMenu,
+		appendOutput,
 	]);
 
 	const switchToExistingSession = React.useCallback(
@@ -72,9 +84,21 @@ const App: React.FC = () => {
 			if (!session) return;
 
 			clearScreen();
+
+			// Restore the previous outputs
+			for (const output of session.outputs) {
+				process.stdout.write(output);
+			}
+
 			switchToSession(sessionId);
 
-			const listeners = setupProcessListeners(session.process);
+			const listeners = setupProcessListeners(
+				session.process,
+				undefined,
+				(data) => {
+					appendOutput(sessionId, data);
+				},
+			);
 			setListeners(listeners);
 		},
 		[
@@ -83,6 +107,7 @@ const App: React.FC = () => {
 			switchToSession,
 			setupProcessListeners,
 			setListeners,
+			appendOutput,
 		],
 	);
 
