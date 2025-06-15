@@ -1,183 +1,108 @@
 import * as React from "react";
 import { render, useInput, useApp } from "ink";
-import pty from "node-pty";
-import * as os from "node:os";
 import { Menu } from "./Menu.js";
-
-const shell =
-	os.platform() === "win32" ? "powershell.exe" : process.env.SHELL || "bash";
-
-type Screen = "menu" | "claude";
-type Session = { id: string; process: pty.IPty };
+import { useSessionManager } from "./hooks/useSessionManager.js";
+import { useEventListeners } from "./hooks/useEventListeners.js";
+import { useTerminalController } from "./hooks/useTerminalController.js";
+import { MENU_OPTIONS, SCREENS } from "./constants.js";
+import { isMenuOption } from "./utils.js";
+import type { Session } from "./types.js";
 
 const App: React.FC = () => {
-	const [currentScreen, setCurrentScreen] = React.useState<Screen>("menu");
-	const [sessions, setSessions] = React.useState<Session[]>([]);
-	const [currentSessionId, setCurrentSessionId] = React.useState<string | null>(
-		null,
-	);
+	const {
+		sessions,
+		currentScreen,
+		currentSessionId,
+		generateSessionId,
+		addSession,
+		removeSession,
+		findSession,
+		switchToMenu,
+		switchToSession,
+		killAllSessions,
+	} = useSessionManager();
+
+	const { setListeners, cleanupListeners } = useEventListeners();
+	const { clearScreen, createPtyProcess, setupProcessListeners } =
+		useTerminalController();
 	const { exit } = useApp();
-	const sessionCounter = React.useRef(0);
-	const activeListeners = React.useRef<{
-		handleInput?: (data: Buffer) => void;
-		handleResize?: () => void;
-		dataDisposable?: { dispose: () => void };
-	}>({});
 
 	// Handle Ctrl+Q to return to menu when in claude screen
 	useInput((input, key) => {
-		if (currentScreen === "claude" && key.ctrl && input === "q") {
-			// Clean up event listeners
-			if (activeListeners.current.handleInput) {
-				process.stdin.removeListener("data", activeListeners.current.handleInput);
-			}
-			if (activeListeners.current.handleResize) {
-				process.removeListener("SIGWINCH", activeListeners.current.handleResize);
-			}
-			if (activeListeners.current.dataDisposable) {
-				activeListeners.current.dataDisposable.dispose();
-			}
-			
-			// Return to menu without killing the session
-			// Clear screen and return to menu
-			process.stdout.write("\x1b[2J\x1b[H");
-			setCurrentScreen("menu");
-			setCurrentSessionId(null);
-			activeListeners.current = {};
+		if (currentScreen === SCREENS.CLAUDE && key.ctrl && input === "q") {
+			cleanupListeners();
+			clearScreen();
+			switchToMenu();
 		}
 	});
 
-	const launchClaude = React.useCallback((sessionId: string) => {
+	const launchNewSession = React.useCallback(() => {
 		const args = process.argv.slice(2);
+		const sessionId = generateSessionId();
 
-		// Clear the screen before launching claude
-		process.stdout.write("\x1b[2J\x1b[H");
+		clearScreen();
 
-		const ptyProcess = pty.spawn("claude", args, {
-			name: "xterm-color",
-			cols: process.stdout.columns || 80,
-			rows: process.stdout.rows || 24,
-			cwd: process.cwd(),
-			env: process.env,
+		const ptyProcess = createPtyProcess(args);
+
+		const listeners = setupProcessListeners(ptyProcess, () => {
+			removeSession(sessionId);
+			clearScreen();
+			switchToMenu();
 		});
 
-		// Handle output from claude
-		const dataDisposable = ptyProcess.onData((data) => {
-			process.stdout.write(data);
-		});
+		setListeners(listeners);
+		const newSession: Session = { id: sessionId, process: ptyProcess };
+		addSession(newSession);
+		switchToSession(sessionId);
+	}, [
+		generateSessionId,
+		clearScreen,
+		createPtyProcess,
+		setupProcessListeners,
+		setListeners,
+		addSession,
+		removeSession,
+		switchToSession,
+		switchToMenu,
+	]);
 
-		// Handle input to claude
-		const handleInput = (data: Buffer) => {
-			ptyProcess.write(data.toString());
-		};
+	const switchToExistingSession = React.useCallback(
+		(sessionId: string) => {
+			const session = findSession(sessionId);
+			if (!session) return;
 
-		if (process.stdin.isTTY) {
-			process.stdin.setRawMode(true);
-		}
-		process.stdin.resume();
-		process.stdin.on("data", handleInput);
+			clearScreen();
+			switchToSession(sessionId);
 
-		// Handle terminal resize
-		const handleResize = () => {
-			if (process.stdout.columns && process.stdout.rows) {
-				ptyProcess.resize(process.stdout.columns, process.stdout.rows);
-			}
-		};
-		process.on("SIGWINCH", handleResize);
-
-		// Store listeners for cleanup
-		activeListeners.current = { handleInput, handleResize, dataDisposable };
-
-		// Clean up on exit
-		ptyProcess.onExit(({ exitCode }) => {
-			// Remove event listeners
-			process.stdin.removeListener("data", handleInput);
-			process.removeListener("SIGWINCH", handleResize);
-
-			// Remove the session from the list
-			setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-
-			// Clear screen and return to menu
-			process.stdout.write("\x1b[2J\x1b[H");
-			setCurrentScreen("menu");
-			setCurrentSessionId(null);
-		});
-
-		return ptyProcess;
-	}, []);
-
-	const switchToSession = React.useCallback((sessionId: string) => {
-		const session = sessions.find((s) => s.id === sessionId);
-		if (!session) return;
-
-		// Clean up previous session listeners if any
-		if (activeListeners.current.dataDisposable) {
-			activeListeners.current.dataDisposable.dispose();
-		}
-
-		// Clear the screen
-		process.stdout.write("\x1b[2J\x1b[H");
-		setCurrentSessionId(sessionId);
-		setCurrentScreen("claude");
-
-		// Set up input handling for this session
-		const handleInput = (data: Buffer) => {
-			session.process.write(data.toString());
-		};
-
-		if (process.stdin.isTTY) {
-			process.stdin.setRawMode(true);
-		}
-		process.stdin.resume();
-		process.stdin.on("data", handleInput);
-
-		// Handle output from the session
-		const dataDisposable = session.process.onData((data) => {
-			process.stdout.write(data);
-		});
-
-		// Handle terminal resize
-		const handleResize = () => {
-			if (process.stdout.columns && process.stdout.rows) {
-				session.process.resize(process.stdout.columns, process.stdout.rows);
-			}
-		};
-		process.on("SIGWINCH", handleResize);
-
-		// Store listeners for cleanup
-		activeListeners.current = { handleInput, handleResize, dataDisposable };
-	}, [sessions]);
+			const listeners = setupProcessListeners(session.process);
+			setListeners(listeners);
+		},
+		[
+			findSession,
+			clearScreen,
+			switchToSession,
+			setupProcessListeners,
+			setListeners,
+		],
+	);
 
 	const handleSelect = React.useCallback(
 		(option: string) => {
-			if (option === "start") {
-				sessionCounter.current += 1;
-				const newSessionId = `session-${sessionCounter.current}`;
-				
-				setCurrentScreen("claude");
-				setCurrentSessionId(newSessionId);
-				
-				// Launch claude after state update
-				setTimeout(() => {
-					const process = launchClaude(newSessionId);
-					setSessions((prev) => [...prev, { id: newSessionId, process }]);
-				}, 0);
-			} else if (option === "exit") {
-				// Kill all sessions before exiting
-				for (const session of sessions) {
-					session.process.kill();
-				}
+			if (option === MENU_OPTIONS.START) {
+				launchNewSession();
+			} else if (option === MENU_OPTIONS.EXIT) {
+				killAllSessions();
 				exit();
-			} else {
+			} else if (!isMenuOption(option)) {
 				// It's a session ID
-				switchToSession(option);
+				switchToExistingSession(option);
 			}
 		},
-		[exit, launchClaude, sessions, switchToSession],
+		[launchNewSession, killAllSessions, exit, switchToExistingSession],
 	);
 
 	// Only render menu when on menu screen
-	if (currentScreen === "menu") {
+	if (currentScreen === SCREENS.MENU) {
 		return <Menu onSelect={handleSelect} sessions={sessions} />;
 	}
 
@@ -192,3 +117,5 @@ process.on("beforeExit", () => {
 		app.unmount();
 	}
 });
+
+export default App;

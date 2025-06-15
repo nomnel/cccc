@@ -1,8 +1,7 @@
 import * as React from "react";
-import { Box, Text, useApp, useInput } from "ink";
-import type pty from "node-pty";
-
-type Session = { id: string; process: pty.IPty };
+import { Box, Text, useInput } from "ink";
+import { MENU_OPTIONS } from "./constants.js";
+import type { Session } from "./types.js";
 
 interface MenuProps {
 	onSelect: (option: string) => void;
@@ -11,14 +10,14 @@ interface MenuProps {
 
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
-	
+
 	// Build options array: start, sessions, exit
 	const options = React.useMemo(() => {
-		const result = ["start"];
+		const result: string[] = [MENU_OPTIONS.START];
 		for (const session of sessions) {
 			result.push(session.id);
 		}
-		result.push("exit");
+		result.push(MENU_OPTIONS.EXIT);
 		return result;
 	}, [sessions]);
 
