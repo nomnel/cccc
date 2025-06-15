@@ -127,13 +127,13 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as any,
+					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as any,
+					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -155,7 +155,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -177,7 +177,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -239,7 +239,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -262,7 +262,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -291,7 +291,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [Buffer.from("Existing output\n")],
 					lastUpdated: new Date(),
 				});
@@ -317,7 +317,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as any,
+					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -345,13 +345,13 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as any,
+					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as any,
+					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
@@ -394,13 +394,13 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as any,
+					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as any,
+					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				});

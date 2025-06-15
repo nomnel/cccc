@@ -1,22 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { render } from "@testing-library/react";
+import type { IPty } from "node-pty";
 import { Menu } from "./Menu.js";
 import { MENU_OPTIONS } from "./constants.js";
+import type { Session } from "./types.js";
 
 // Inkのモック
 vi.mock("ink", () => {
 	const mockUseInput = vi.fn();
 	return {
-		Box: ({ children }: any) => React.createElement("div", null, children),
-		Text: ({ children, color }: any) =>
+		Box: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children),
+		Text: ({ children, color }: { children: React.ReactNode; color?: string }) =>
 			React.createElement("span", { "data-color": color }, children),
 		useInput: mockUseInput,
 	};
 });
 
 describe("Menu", () => {
-	let mockUseInput: any;
+	let mockUseInput: ReturnType<typeof vi.fn>;
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
@@ -35,13 +37,13 @@ describe("Menu", () => {
 		const sessions = [
 			{
 				id: "session-1",
-				process: {} as any,
+				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
 			},
 			{
 				id: "session-2",
-				process: {} as any,
+				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
 			},
@@ -51,7 +53,7 @@ describe("Menu", () => {
 		const element = React.createElement(Menu, {
 			onSelect: mockOnSelect,
 			sessions: sessions,
-		} as any);
+		});
 
 		expect(element).toBeDefined();
 		expect(element.props.onSelect).toBe(mockOnSelect);
@@ -83,7 +85,7 @@ describe("Menu", () => {
 	describe("メニューオプションの表示", () => {
 		it("セッションなしの場合、START と EXIT オプションが表示される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			const { container } = render(
 				React.createElement(Menu, {
@@ -106,13 +108,13 @@ describe("Menu", () => {
 			const sessions = [
 				{
 					id: "session-1",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
 				{
 					id: "session-2",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
@@ -131,14 +133,14 @@ describe("Menu", () => {
 			);
 
 			expect(textContents).toContain(`▶ ${MENU_OPTIONS.START}`);
-			expect(textContents).toContain(`  session-1`);
-			expect(textContents).toContain(`  session-2`);
+			expect(textContents).toContain("  session-1");
+			expect(textContents).toContain("  session-2");
 			expect(textContents).toContain(`  ${MENU_OPTIONS.EXIT}`);
 		});
 
 		it("最初のオプションが選択状態で表示される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			const { container } = render(
 				React.createElement(Menu, {
@@ -156,13 +158,13 @@ describe("Menu", () => {
 			const sessions = [
 				{
 					id: "session-1",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
 				{
 					id: "session-2",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
@@ -183,7 +185,7 @@ describe("Menu", () => {
 	describe("キーボード入力処理", () => {
 		it("useInputが正しく呼び出される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			render(
 				React.createElement(Menu, {
@@ -201,7 +203,7 @@ describe("Menu", () => {
 			const sessions = [
 				{
 					id: "session-1",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
@@ -228,7 +230,7 @@ describe("Menu", () => {
 
 		it("下矢印キーで選択インデックスが正しく変更される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			render(
 				React.createElement(Menu, {
@@ -247,7 +249,7 @@ describe("Menu", () => {
 
 		it("EnterキーでonSelectが呼び出される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			render(
 				React.createElement(Menu, {
@@ -269,7 +271,7 @@ describe("Menu", () => {
 	describe("オプション配列の生成", () => {
 		it("セッションがない場合はSTARTとEXITのみ", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			// オプション配列の検証のため、実際のコンポーネントロジックをテスト
 			const expectedOptions = [MENU_OPTIONS.START, MENU_OPTIONS.EXIT];
@@ -288,13 +290,13 @@ describe("Menu", () => {
 			const sessions = [
 				{
 					id: "session-1",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
 				{
 					id: "session-2",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},
@@ -319,7 +321,7 @@ describe("Menu", () => {
 			const mockOnSelect = vi.fn();
 			const sessions = Array.from({ length: 10 }, (_, i) => ({
 				id: `session-${i + 1}`,
-				process: {} as any,
+				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
 			}));
@@ -336,16 +338,16 @@ describe("Menu", () => {
 			expect(options[options.length - 1]).toBe(MENU_OPTIONS.EXIT);
 
 			// 全セッションが含まれていることを確認
-			sessions.forEach((session) => {
+			for (const session of sessions) {
 				expect(options).toContain(session.id);
-			});
+			}
 		});
 	});
 
 	describe("プロパティの型チェック", () => {
 		it("onSelectが関数であることを確認", () => {
 			const mockOnSelect = vi.fn();
-			const sessions: any[] = [];
+			const sessions: Session[] = [];
 
 			const element = React.createElement(Menu, {
 				onSelect: mockOnSelect,
@@ -360,7 +362,7 @@ describe("Menu", () => {
 			const sessions = [
 				{
 					id: "session-1",
-					process: {} as any,
+					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
 				},

@@ -37,7 +37,8 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		// - OSC sequences: ESC ] ... ST/BEL
 		// - Other escape sequences
 		return text.replace(
-			/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+			// biome-ignore lint/suspicious/noControlCharactersInRegex: This regex is specifically designed to match and remove ANSI escape sequences
+			/[\x1b\x9b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 			"",
 		);
 	};
