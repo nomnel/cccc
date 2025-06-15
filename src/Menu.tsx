@@ -14,6 +14,21 @@ const SESSION_PREVIEW_LENGTH = 50;
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 
+	// Format timestamp to show relative time
+	const formatTimestamp = (date: Date): string => {
+		const now = new Date();
+		const diff = now.getTime() - date.getTime();
+		const seconds = Math.floor(diff / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const hours = Math.floor(minutes / 60);
+		const days = Math.floor(hours / 24);
+
+		if (days > 0) return `${days}d ago`;
+		if (hours > 0) return `${hours}h ago`;
+		if (minutes > 0) return `${minutes}m ago`;
+		return "just now";
+	};
+
 	// Extract last 50 characters from session outputs
 	const getSessionPreview = (session: Session): string => {
 		if (session.outputs.length === 0) return "";
@@ -69,7 +84,8 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 								const session = sessions.find((s) => s.id === option);
 								if (session) {
 									const preview = getSessionPreview(session);
-									return preview ? ` - ${preview}` : "";
+									const timestamp = formatTimestamp(session.lastUpdated);
+									return ` (${timestamp})${preview ? ` - ${preview}` : ""}`;
 								}
 								return "";
 							})()}

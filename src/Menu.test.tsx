@@ -33,8 +33,18 @@ describe("Menu", () => {
 		const { Menu } = await import("./Menu.js");
 		const mockOnSelect = vi.fn();
 		const sessions = [
-			{ id: "session-1", process: {} as any, outputs: [] },
-			{ id: "session-2", process: {} as any, outputs: [] },
+			{
+				id: "session-1",
+				process: {} as any,
+				outputs: [],
+				lastUpdated: new Date(),
+			},
+			{
+				id: "session-2",
+				process: {} as any,
+				outputs: [],
+				lastUpdated: new Date(),
+			},
 		];
 
 		// コンポーネントの作成をテスト
@@ -94,8 +104,18 @@ describe("Menu", () => {
 		it("セッションありの場合、START、セッション、EXIT の順で表示される", () => {
 			const mockOnSelect = vi.fn();
 			const sessions = [
-				{ id: "session-1", process: {} as any, outputs: [] },
-				{ id: "session-2", process: {} as any, outputs: [] },
+				{
+					id: "session-1",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
+				{
+					id: "session-2",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
 			];
 
 			const { container } = render(
@@ -134,8 +154,18 @@ describe("Menu", () => {
 		it("複数セッションがある場合も最初のオプションが選択状態", () => {
 			const mockOnSelect = vi.fn();
 			const sessions = [
-				{ id: "session-1", process: {} as any, outputs: [] },
-				{ id: "session-2", process: {} as any, outputs: [] },
+				{
+					id: "session-1",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
+				{
+					id: "session-2",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
 			];
 
 			const { container } = render(
@@ -168,7 +198,14 @@ describe("Menu", () => {
 
 		it("上矢印キーで選択インデックスが正しく変更される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [{ id: "session-1", process: {} as any, outputs: [] }];
+			const sessions = [
+				{
+					id: "session-1",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
+			];
 
 			render(
 				React.createElement(Menu, {
@@ -249,8 +286,18 @@ describe("Menu", () => {
 		it("セッションがある場合はSTART、セッション、EXITの順", () => {
 			const mockOnSelect = vi.fn();
 			const sessions = [
-				{ id: "session-1", process: {} as any, outputs: [] },
-				{ id: "session-2", process: {} as any, outputs: [] },
+				{
+					id: "session-1",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
+				{
+					id: "session-2",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
 			];
 
 			const expectedOptions = [
@@ -274,6 +321,7 @@ describe("Menu", () => {
 				id: `session-${i + 1}`,
 				process: {} as any,
 				outputs: [],
+				lastUpdated: new Date(),
 			}));
 
 			const expectedLength = 1 + sessions.length + 1; // START + セッション数 + EXIT
@@ -309,7 +357,14 @@ describe("Menu", () => {
 
 		it("sessionsが配列であることを確認", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [{ id: "session-1", process: {} as any, outputs: [] }];
+			const sessions = [
+				{
+					id: "session-1",
+					process: {} as any,
+					outputs: [],
+					lastUpdated: new Date(),
+				},
+			];
 
 			const element = React.createElement(Menu, {
 				onSelect: mockOnSelect,

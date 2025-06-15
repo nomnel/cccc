@@ -6,6 +6,7 @@ export type Session = {
 	id: string;
 	process: pty.IPty;
 	outputs: Buffer[];
+	lastUpdated: Date;
 };
 
 export type MenuOption = "start" | "exit" | string;

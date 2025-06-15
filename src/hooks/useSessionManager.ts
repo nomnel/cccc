@@ -52,7 +52,11 @@ export const useSessionManager = () => {
 			setSessions((prev) =>
 				prev.map((session) =>
 					session.id === sessionId
-						? { ...session, outputs: [...session.outputs, output] }
+						? {
+								...session,
+								outputs: [...session.outputs, output],
+								lastUpdated: new Date(),
+							}
 						: session,
 				),
 			);

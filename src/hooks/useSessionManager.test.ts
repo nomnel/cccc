@@ -79,6 +79,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as IPty,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -97,6 +98,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess1 as IPty,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -105,6 +107,7 @@ describe("useSessionManager", () => {
 					id: "session-2",
 					process: mockProcess2 as IPty,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -126,11 +129,13 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess1 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -152,6 +157,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -173,6 +179,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -234,6 +241,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -256,6 +264,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -284,6 +293,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [Buffer.from("Existing output\n")],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -309,6 +319,7 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -336,11 +347,13 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess1 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 
@@ -383,11 +396,13 @@ describe("useSessionManager", () => {
 					id: "session-1",
 					process: mockProcess1 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as any,
 					outputs: [],
+					lastUpdated: new Date(),
 				});
 			});
 

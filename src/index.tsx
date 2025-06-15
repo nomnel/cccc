@@ -62,6 +62,7 @@ const App: React.FC = () => {
 			id: sessionId,
 			process: ptyProcess,
 			outputs: [],
+			lastUpdated: new Date(),
 		};
 		addSession(newSession);
 		switchToSession(sessionId);
