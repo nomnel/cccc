@@ -29,6 +29,19 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return "just now";
 	};
 
+	// Strip ANSI escape sequences from text
+	const stripAnsi = (text: string): string => {
+		// Remove ANSI escape sequences
+		// Matches:
+		// - CSI sequences: ESC [ ... m
+		// - OSC sequences: ESC ] ... ST/BEL
+		// - Other escape sequences
+		return text.replace(
+			/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+			"",
+		);
+	};
+
 	// Extract last 50 characters from session outputs
 	const getSessionPreview = (session: Session): string => {
 		if (session.outputs.length === 0) return "";
@@ -36,8 +49,11 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		// Concatenate all outputs
 		const fullOutput = Buffer.concat(session.outputs).toString();
 
+		// Strip ANSI escape sequences
+		const cleanOutput = stripAnsi(fullOutput);
+
 		// Replace consecutive whitespace characters with single space
-		const normalizedOutput = fullOutput.replace(/\s+/g, " ");
+		const normalizedOutput = cleanOutput.replace(/\s+/g, " ");
 
 		// Get last characters based on the defined limit
 		if (normalizedOutput.length <= SESSION_PREVIEW_LENGTH) {
