@@ -53,7 +53,7 @@ const App: React.FC = () => {
 				switchToMenu();
 			},
 			(data) => {
-				appendOutput(sessionId, data);
+				appendOutput(sessionId, Buffer.from(data));
 			},
 		);
 
@@ -96,7 +96,7 @@ const App: React.FC = () => {
 				session.process,
 				undefined,
 				(data) => {
-					appendOutput(sessionId, data);
+					appendOutput(sessionId, Buffer.from(data));
 				},
 			);
 			setListeners(listeners);

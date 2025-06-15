@@ -48,7 +48,7 @@ export const useSessionManager = () => {
 	}, [sessions]);
 
 	const appendOutput = React.useCallback(
-		(sessionId: string, output: string) => {
+		(sessionId: string, output: Buffer) => {
 			setSessions((prev) =>
 				prev.map((session) =>
 					session.id === sessionId

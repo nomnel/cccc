@@ -239,11 +239,11 @@ describe("useSessionManager", () => {
 
 			// 出力を追加
 			act(() => {
-				result.current.appendOutput("session-1", "Hello World\n");
+				result.current.appendOutput("session-1", Buffer.from("Hello World\n"));
 			});
 
 			const session = result.current.findSession("session-1");
-			expect(session?.outputs).toEqual(["Hello World\n"]);
+			expect(session?.outputs).toEqual([Buffer.from("Hello World\n")]);
 		});
 
 		it("複数の出力を順番に追加できる", () => {
@@ -261,13 +261,17 @@ describe("useSessionManager", () => {
 
 			// 複数の出力を追加
 			act(() => {
-				result.current.appendOutput("session-1", "Line 1\n");
-				result.current.appendOutput("session-1", "Line 2\n");
-				result.current.appendOutput("session-1", "Line 3\n");
+				result.current.appendOutput("session-1", Buffer.from("Line 1\n"));
+				result.current.appendOutput("session-1", Buffer.from("Line 2\n"));
+				result.current.appendOutput("session-1", Buffer.from("Line 3\n"));
 			});
 
 			const session = result.current.findSession("session-1");
-			expect(session?.outputs).toEqual(["Line 1\n", "Line 2\n", "Line 3\n"]);
+			expect(session?.outputs).toEqual([
+				Buffer.from("Line 1\n"),
+				Buffer.from("Line 2\n"),
+				Buffer.from("Line 3\n"),
+			]);
 		});
 
 		it("既存の出力がある場合は追加される", () => {
@@ -279,17 +283,20 @@ describe("useSessionManager", () => {
 				result.current.addSession({
 					id: "session-1",
 					process: mockProcess as any,
-					outputs: ["Existing output\n"],
+					outputs: [Buffer.from("Existing output\n")],
 				});
 			});
 
 			// 新しい出力を追加
 			act(() => {
-				result.current.appendOutput("session-1", "New output\n");
+				result.current.appendOutput("session-1", Buffer.from("New output\n"));
 			});
 
 			const session = result.current.findSession("session-1");
-			expect(session?.outputs).toEqual(["Existing output\n", "New output\n"]);
+			expect(session?.outputs).toEqual([
+				Buffer.from("Existing output\n"),
+				Buffer.from("New output\n"),
+			]);
 		});
 
 		it("存在しないセッションIDに対しては何も起こらない", () => {
@@ -307,7 +314,10 @@ describe("useSessionManager", () => {
 
 			// 存在しないセッションに出力を追加
 			act(() => {
-				result.current.appendOutput("non-existent", "Test output\n");
+				result.current.appendOutput(
+					"non-existent",
+					Buffer.from("Test output\n"),
+				);
 			});
 
 			// 既存のセッションには影響なし
@@ -336,19 +346,28 @@ describe("useSessionManager", () => {
 
 			// それぞれのセッションに異なる出力を追加
 			act(() => {
-				result.current.appendOutput("session-1", "Session 1 output\n");
-				result.current.appendOutput("session-2", "Session 2 output\n");
-				result.current.appendOutput("session-1", "More for session 1\n");
+				result.current.appendOutput(
+					"session-1",
+					Buffer.from("Session 1 output\n"),
+				);
+				result.current.appendOutput(
+					"session-2",
+					Buffer.from("Session 2 output\n"),
+				);
+				result.current.appendOutput(
+					"session-1",
+					Buffer.from("More for session 1\n"),
+				);
 			});
 
 			const session1 = result.current.findSession("session-1");
 			const session2 = result.current.findSession("session-2");
 
 			expect(session1?.outputs).toEqual([
-				"Session 1 output\n",
-				"More for session 1\n",
+				Buffer.from("Session 1 output\n"),
+				Buffer.from("More for session 1\n"),
 			]);
-			expect(session2?.outputs).toEqual(["Session 2 output\n"]);
+			expect(session2?.outputs).toEqual([Buffer.from("Session 2 output\n")]);
 		});
 	});
 

@@ -5,7 +5,7 @@ export type Screen = "menu" | "claude";
 export type Session = {
 	id: string;
 	process: pty.IPty;
-	outputs: string[];
+	outputs: Buffer[];
 };
 
 export type MenuOption = "start" | "exit" | string;
