@@ -1,13 +1,26 @@
 import * as React from "react";
 import { Box, Text, useApp, useInput } from "ink";
+import type pty from "node-pty";
+
+type Session = { id: string; process: pty.IPty };
 
 interface MenuProps {
-	onSelect: (option: "start" | "exit") => void;
+	onSelect: (option: string) => void;
+	sessions: Session[];
 }
 
-export const Menu: React.FC<MenuProps> = ({ onSelect }) => {
+export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
-	const options = ["start", "exit"] as const;
+	
+	// Build options array: start, sessions, exit
+	const options = React.useMemo(() => {
+		const result = ["start"];
+		for (const session of sessions) {
+			result.push(session.id);
+		}
+		result.push("exit");
+		return result;
+	}, [sessions]);
 
 	useInput((_input, key) => {
 		if (key.upArrow) {
