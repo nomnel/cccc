@@ -43,6 +43,77 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		);
 	};
 
+	// Get session status based on recent output
+	const getSessionStatus = (session: Session): string => {
+		if (session.outputs.length === 0) return "Idle";
+
+		// Get last 100 lines of output
+		const fullOutput = Buffer.concat(session.outputs.slice(-100)).toString();
+		const lines = fullOutput.split("\n");
+		const recentLines = lines.slice(-100).join("\n");
+		const cleanOutput = stripAnsi(recentLines);
+
+		// Check for common patterns that indicate a running process
+		// Look for spinner patterns, progress indicators, or common running messages
+		const runningPatterns = [
+			"esc to interrupt",
+			"ctrl+c to stop",
+			"press any key to stop",
+			"running",
+			"processing",
+			"⠋",
+			"⠙",
+			"⠹",
+			"⠸",
+			"⠼",
+			"⠴",
+			"⠦",
+			"⠧",
+			"⠇",
+			"⠏", // spinner characters
+			"█",
+			"▓",
+			"▒",
+			"░", // progress bar characters
+		];
+
+		for (const pattern of runningPatterns) {
+			if (cleanOutput.toLowerCase().includes(pattern.toLowerCase())) {
+				return "Running";
+			}
+		}
+
+		// Check for input prompts
+		const inputPatterns = [
+			"Do you want",
+			"Would you like",
+			"Enter",
+			"Please choose",
+			"Select",
+			"Continue?",
+			"(y/n)",
+			"(yes/no)",
+			"?",
+		];
+
+		for (const pattern of inputPatterns) {
+			if (cleanOutput.includes(pattern)) {
+				return "Awaiting Input";
+			}
+		}
+
+		// Check if the last line ends with a colon or question mark (common prompt indicators)
+		const lastLine = lines[lines.length - 1];
+		if (
+			lastLine &&
+			(lastLine.trim().endsWith(":") || lastLine.trim().endsWith("?"))
+		) {
+			return "Awaiting Input";
+		}
+
+		return "Idle";
+	};
+
 	// Extract last 50 characters from session outputs
 	const getSessionPreview = (session: Session): string => {
 		if (session.outputs.length === 0) return "";
@@ -100,9 +171,22 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 							(() => {
 								const session = sessions.find((s) => s.id === option);
 								if (session) {
+									const status = getSessionStatus(session);
+									const statusColor =
+										status === "Awaiting Input"
+											? "yellow"
+											: status === "Running"
+												? "cyan"
+												: "dim";
 									const preview = getSessionPreview(session);
 									const timestamp = formatTimestamp(session.lastUpdated);
-									return ` (${timestamp})${preview ? ` - ${preview}` : ""}`;
+									return (
+										<>
+											{" "}
+											({timestamp}) [<Text color={statusColor}>{status}</Text>]
+											{preview ? ` - ${preview}` : ""}
+										</>
+									);
 								}
 								return "";
 							})()}
