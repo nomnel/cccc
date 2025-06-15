@@ -20,7 +20,13 @@ export const useSessionManager = () => {
 	}, []);
 
 	const removeSession = React.useCallback((sessionId: string) => {
-		setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+		setSessions((prev) => {
+			const sessionToRemove = prev.find((s) => s.id === sessionId);
+			if (sessionToRemove?.dataDisposable) {
+				sessionToRemove.dataDisposable.dispose();
+			}
+			return prev.filter((s) => s.id !== sessionId);
+		});
 	}, []);
 
 	const findSession = React.useCallback(
@@ -42,6 +48,9 @@ export const useSessionManager = () => {
 
 	const killAllSessions = React.useCallback(() => {
 		for (const session of sessions) {
+			if (session.dataDisposable) {
+				session.dataDisposable.dispose();
+			}
 			session.process.kill();
 		}
 		setSessions([]);

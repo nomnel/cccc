@@ -25,21 +25,28 @@ export const useTerminalController = () => {
 		});
 	}, []);
 
-	const setupProcessListeners = React.useCallback(
+	// Set up persistent data listener that always captures output
+	const setupPersistentDataListener = React.useCallback(
 		(
 			ptyProcess: pty.IPty,
-			onExit?: () => void,
-			onData?: (data: string) => void,
-		): EventListeners => {
-			// Handle output
-			const dataDisposable = ptyProcess.onData((data) => {
-				process.stdout.write(data);
-				// Call the onData callback if provided
-				if (onData) {
-					onData(data);
+			onData: (data: string) => void,
+			isActive: () => boolean,
+		) => {
+			return ptyProcess.onData((data) => {
+				// Always capture data
+				onData(data);
+				// Only write to stdout if this session is active
+				if (isActive()) {
+					process.stdout.write(data);
 				}
 			});
+		},
+		[],
+	);
 
+	// Set up input and resize listeners for active session
+	const setupActiveSessionListeners = React.useCallback(
+		(ptyProcess: pty.IPty): EventListeners => {
 			// Handle input
 			const handleInput = (data: Buffer) => {
 				ptyProcess.write(data.toString());
@@ -56,14 +63,10 @@ export const useTerminalController = () => {
 			};
 			process.on("SIGWINCH", handleResize);
 
-			// Setup exit handler
-			if (onExit) {
-				ptyProcess.onExit(() => {
-					process.stdin.removeListener("data", handleInput);
-					process.removeListener("SIGWINCH", handleResize);
-					onExit();
-				});
-			}
+			// Set up data forwarder for active session
+			const dataDisposable = ptyProcess.onData((data) => {
+				process.stdout.write(data);
+			});
 
 			return { handleInput, handleResize, dataDisposable };
 		},
@@ -73,6 +76,7 @@ export const useTerminalController = () => {
 	return {
 		clearScreen,
 		createPtyProcess,
-		setupProcessListeners,
+		setupPersistentDataListener,
+		setupActiveSessionListeners,
 	};
 };

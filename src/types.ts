@@ -7,6 +7,7 @@ export type Session = {
 	process: pty.IPty;
 	outputs: Buffer[];
 	lastUpdated: Date;
+	dataDisposable?: { dispose: () => void };
 };
 
 export type MenuOption = "start" | "exit" | string;

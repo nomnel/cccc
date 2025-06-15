@@ -183,32 +183,50 @@ describe("useTerminalController", () => {
 	});
 
 	describe("プロセスリスナー設定", () => {
-		it("setupProcessListeners関数が提供される", async () => {
+		it("setupPersistentDataListener関数が提供される", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			expect(typeof result.current.setupProcessListeners).toBe("function");
+			expect(typeof result.current.setupPersistentDataListener).toBe(
+				"function",
+			);
 		});
 
-		it("データリスナーが正しく設定される", async () => {
+		it("setupActiveSessionListeners関数が提供される", async () => {
+			const { useTerminalController } = await import(
+				"./useTerminalController.js"
+			);
+			const { result } = renderHook(() => useTerminalController());
+
+			expect(typeof result.current.setupActiveSessionListeners).toBe(
+				"function",
+			);
+		});
+
+		it("永続的データリスナーが正しく設定される", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
 			const { result } = renderHook(() => useTerminalController());
 
 			const mockOnData = vi.fn();
+			const mockIsActive = vi.fn().mockReturnValue(true);
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess);
+			const dataDisposable = result.current.setupPersistentDataListener(
+				mockPtyProcess,
+				mockOnData,
+				mockIsActive,
+			);
 
 			expect(mockPtyProcess.onData).toHaveBeenCalled();
-			expect(listeners.dataDisposable).toBeDefined();
-			expect(typeof listeners.dataDisposable?.dispose).toBe("function");
+			expect(dataDisposable).toBeDefined();
+			expect(typeof dataDisposable.dispose).toBe("function");
 		});
 
-		it("入力リスナーが正しく設定される", async () => {
+		it("アクティブセッションリスナーが正しく設定される", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
@@ -216,12 +234,15 @@ describe("useTerminalController", () => {
 
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess);
+			const listeners =
+				result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			expect(mockStdin.setRawMode).toHaveBeenCalledWith(true);
 			expect(mockStdin.resume).toHaveBeenCalled();
 			expect(mockStdin.on).toHaveBeenCalledWith("data", listeners.handleInput);
 			expect(typeof listeners.handleInput).toBe("function");
+			expect(typeof listeners.handleResize).toBe("function");
+			expect(listeners.dataDisposable).toBeDefined();
 		});
 
 		it("リサイズリスナーが正しく設定される", async () => {
@@ -232,7 +253,8 @@ describe("useTerminalController", () => {
 
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess);
+			const listeners =
+				result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			expect(mockProcess.on).toHaveBeenCalledWith(
 				"SIGWINCH",
@@ -241,27 +263,45 @@ describe("useTerminalController", () => {
 			expect(typeof listeners.handleResize).toBe("function");
 		});
 
-		it("終了コールバックが設定される", async () => {
+		it("永続的データリスナーでアクティブ時のみ出力される", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			const mockOnExit = vi.fn();
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			const mockOnData = vi.fn();
+			const mockIsActive = vi.fn();
+			let onDataCallback: (data: string) => void = () => {};
 
-			const listeners = result.current.setupProcessListeners(
+			mockPtyProcess.onData.mockImplementation((callback) => {
+				onDataCallback = callback;
+				return { dispose: vi.fn() };
+			});
+
+			result.current.setupPersistentDataListener(
 				mockPtyProcess,
-				mockOnExit,
+				mockOnData,
+				mockIsActive,
 			);
 
-			expect(mockPtyProcess.onExit).toHaveBeenCalled();
+			// アクティブな場合
+			mockIsActive.mockReturnValue(true);
+			act(() => {
+				onDataCallback("test data");
+			});
 
-			// onExitコールバックの実行をテスト
-			const onExitCallback = mockPtyProcess.onExit.mock.calls[0]?.[0];
-			onExitCallback();
+			expect(mockOnData).toHaveBeenCalledWith("test data");
+			expect(mockStdout.write).toHaveBeenCalledWith("test data");
 
-			expect(mockOnExit).toHaveBeenCalled();
+			// 非アクティブな場合
+			mockIsActive.mockReturnValue(false);
+			mockStdout.write.mockClear();
+			act(() => {
+				onDataCallback("test data 2");
+			});
+
+			expect(mockOnData).toHaveBeenCalledWith("test data 2");
+			expect(mockStdout.write).not.toHaveBeenCalled();
 		});
 
 		it("TTYでない場合はsetRawModeが呼ばれない", async () => {
@@ -282,7 +322,7 @@ describe("useTerminalController", () => {
 
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			result.current.setupProcessListeners(mockPtyProcess);
+			result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			expect(mockProcessNoTTY.stdin.setRawMode).not.toHaveBeenCalled();
 			expect(mockProcessNoTTY.stdin.resume).toHaveBeenCalled();
@@ -290,7 +330,7 @@ describe("useTerminalController", () => {
 	});
 
 	describe("統合テスト", () => {
-		it("データ出力が正しく標準出力に書き込まれる", async () => {
+		it("アクティブセッションのデータ出力が標準出力に書き込まれる", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
@@ -304,7 +344,7 @@ describe("useTerminalController", () => {
 				return { dispose: vi.fn() };
 			});
 
-			result.current.setupProcessListeners(mockPtyProcess);
+			result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			// データ出力をシミュレート
 			act(() => {
@@ -322,7 +362,8 @@ describe("useTerminalController", () => {
 
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess);
+			const listeners =
+				result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			const testInput = Buffer.from("test input");
 
@@ -342,7 +383,8 @@ describe("useTerminalController", () => {
 
 			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
-			const listeners = result.current.setupProcessListeners(mockPtyProcess);
+			const listeners =
+				result.current.setupActiveSessionListeners(mockPtyProcess);
 
 			// リサイズをシミュレート
 			act(() => {

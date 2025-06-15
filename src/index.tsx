@@ -23,15 +23,28 @@ const App: React.FC = () => {
 		appendOutput,
 	} = useSessionManager();
 
-	const { setListeners, cleanupListeners } = useEventListeners();
-	const { clearScreen, createPtyProcess, setupProcessListeners } =
-		useTerminalController();
+	const { setListeners, cleanupListeners, activeListeners } =
+		useEventListeners();
+	const {
+		clearScreen,
+		createPtyProcess,
+		setupPersistentDataListener,
+		setupActiveSessionListeners,
+	} = useTerminalController();
 	const { exit } = useApp();
 
 	// Handle Ctrl+Q to return to menu when in claude screen
 	useInput((input, key) => {
 		if (currentScreen === SCREENS.CLAUDE && key.ctrl && input === "q") {
-			cleanupListeners();
+			// Only cleanup input/resize listeners, keep data listener active
+			if (activeListeners.handleInput) {
+				process.stdin.removeListener("data", activeListeners.handleInput);
+			}
+			if (activeListeners.handleResize) {
+				process.removeListener("SIGWINCH", activeListeners.handleResize);
+			}
+			// Don't dispose data listener - it's managed by the session
+			setListeners({});
 			clearScreen();
 			switchToMenu();
 		}
@@ -45,24 +58,30 @@ const App: React.FC = () => {
 
 		const ptyProcess = createPtyProcess(args);
 
-		const listeners = setupProcessListeners(
+		// Set up persistent data listener that always captures output
+		const dataDisposable = setupPersistentDataListener(
 			ptyProcess,
-			() => {
-				removeSession(sessionId);
-				clearScreen();
-				switchToMenu();
-			},
-			(data) => {
-				appendOutput(sessionId, Buffer.from(data));
-			},
+			(data) => appendOutput(sessionId, Buffer.from(data)),
+			() => currentScreen === SCREENS.CLAUDE && currentSessionId === sessionId,
 		);
 
+		// Set up exit handler
+		ptyProcess.onExit(() => {
+			dataDisposable.dispose();
+			removeSession(sessionId);
+			clearScreen();
+			switchToMenu();
+		});
+
+		// Set up active session listeners
+		const listeners = setupActiveSessionListeners(ptyProcess);
 		setListeners(listeners);
 		const newSession: Session = {
 			id: sessionId,
 			process: ptyProcess,
 			outputs: [],
 			lastUpdated: new Date(),
+			dataDisposable,
 		};
 		addSession(newSession);
 		switchToSession(sessionId);
@@ -70,13 +89,16 @@ const App: React.FC = () => {
 		generateSessionId,
 		clearScreen,
 		createPtyProcess,
-		setupProcessListeners,
+		setupPersistentDataListener,
+		setupActiveSessionListeners,
 		setListeners,
 		addSession,
 		removeSession,
 		switchToSession,
 		switchToMenu,
 		appendOutput,
+		currentScreen,
+		currentSessionId,
 	]);
 
 	const switchToExistingSession = React.useCallback(
@@ -93,22 +115,16 @@ const App: React.FC = () => {
 
 			switchToSession(sessionId);
 
-			const listeners = setupProcessListeners(
-				session.process,
-				undefined,
-				(data) => {
-					appendOutput(sessionId, Buffer.from(data));
-				},
-			);
+			// Set up active session listeners only (data listener is already active)
+			const listeners = setupActiveSessionListeners(session.process);
 			setListeners(listeners);
 		},
 		[
 			findSession,
 			clearScreen,
 			switchToSession,
-			setupProcessListeners,
+			setupActiveSessionListeners,
 			setListeners,
-			appendOutput,
 		],
 	);
 

@@ -11,8 +11,10 @@ vi.mock("ink", () => ({
 	render: mockRender,
 	useInput: mockUseInput,
 	useApp: mockUseApp,
-	Box: ({ children }: { children: React.ReactNode }) => React.createElement("div", null, children),
-	Text: ({ children }: { children: React.ReactNode }) => React.createElement("span", null, children),
+	Box: ({ children }: { children: React.ReactNode }) =>
+		React.createElement("div", null, children),
+	Text: ({ children }: { children: React.ReactNode }) =>
+		React.createElement("span", null, children),
 }));
 
 // hooks のモック
