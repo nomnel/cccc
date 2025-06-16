@@ -3,12 +3,14 @@ import { render, useInput, useApp } from "ink";
 import { Menu } from "./components/Menu.js";
 import { WorktreeMenu } from "./components/WorktreeMenu.js";
 import { BranchInput } from "./components/BranchInput.js";
+import { SettingsSelector } from "./components/SettingsSelector.js";
 import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useEventListeners } from "./hooks/useEventListeners.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import { MENU_OPTIONS, SCREENS } from "./constants.js";
 import { isMenuOption } from "./utils.js";
 import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
+import { findSettingsFiles, type SettingsFile } from "./utils/settingsUtils.js";
 import type { Session } from "./types.js";
 import path from "node:path";
 
@@ -25,6 +27,7 @@ const App: React.FC = () => {
 		switchToSession,
 		switchToWorktree,
 		switchToBranchInput,
+		switchToSettingsSelect,
 		killAllSessions,
 		appendOutput,
 	} = useSessionManager();
@@ -38,6 +41,12 @@ const App: React.FC = () => {
 		setupActiveSessionListeners,
 	} = useTerminalController();
 	const { exit } = useApp();
+
+	// State for pending worktree and settings selection
+	const [pendingWorktree, setPendingWorktree] = React.useState<string | null>(
+		null,
+	);
+	const [settingsFiles, setSettingsFiles] = React.useState<SettingsFile[]>([]);
 
 	// Handle Ctrl+Q to return to menu when in claude screen
 	useInput((input, key) => {
@@ -57,13 +66,17 @@ const App: React.FC = () => {
 	});
 
 	const launchNewSession = React.useCallback(
-		(workingDirectory?: string) => {
+		(workingDirectory?: string, settingsPath?: string) => {
 			const args = process.argv.slice(2);
 			const sessionId = generateSessionId();
 
 			clearScreen();
 
-			const ptyProcess = createPtyProcess(args, workingDirectory);
+			// Create environment with settings path if provided
+			const env = settingsPath
+				? { CLAUDE_SETTINGS_PATH: settingsPath }
+				: undefined;
+			const ptyProcess = createPtyProcess(args, workingDirectory, env);
 
 			// Set up persistent data listener that always captures output
 			const dataDisposable = setupPersistentDataListener(
@@ -92,6 +105,7 @@ const App: React.FC = () => {
 				status: "Idle",
 				preview: "",
 				workingDirectory,
+				settingsPath,
 				dataDisposable,
 			};
 			addSession(newSession);
@@ -166,9 +180,23 @@ const App: React.FC = () => {
 
 	const handleWorktreeSelect = React.useCallback(
 		(worktreePath: string) => {
-			launchNewSession(worktreePath);
+			// Check for settings files in the worktree
+			const settings = findSettingsFiles(worktreePath);
+
+			if (settings.length > 1) {
+				// Multiple settings found, show selector
+				setPendingWorktree(worktreePath);
+				setSettingsFiles(settings);
+				switchToSettingsSelect();
+			} else if (settings.length === 1) {
+				// Single settings file, use it automatically
+				launchNewSession(worktreePath, settings[0]?.path);
+			} else {
+				// No settings files
+				launchNewSession(worktreePath);
+			}
 		},
-		[launchNewSession],
+		[launchNewSession, switchToSettingsSelect],
 	);
 
 	const handleWorktreeBack = React.useCallback(() => {
@@ -186,20 +214,50 @@ const App: React.FC = () => {
 				// Create the worktree with the provided branch name
 				const worktreePath = createWorktree(branchName);
 
-				// Launch a new session in the created worktree
-				launchNewSession(worktreePath);
+				// Check for settings files in the new worktree
+				const settings = findSettingsFiles(worktreePath);
+
+				if (settings.length > 1) {
+					// Multiple settings found, show selector
+					setPendingWorktree(worktreePath);
+					setSettingsFiles(settings);
+					switchToSettingsSelect();
+				} else if (settings.length === 1) {
+					// Single settings file, use it automatically
+					launchNewSession(worktreePath, settings[0]?.path);
+				} else {
+					// No settings files
+					launchNewSession(worktreePath);
+				}
 			} catch (error) {
 				// For now, just log the error and return to menu
 				console.error("Failed to create worktree:", error);
 				switchToMenu();
 			}
 		},
-		[launchNewSession, switchToMenu],
+		[launchNewSession, switchToMenu, switchToSettingsSelect],
 	);
 
 	const handleBranchInputBack = React.useCallback(() => {
 		switchToMenu();
 	}, [switchToMenu]);
+
+	const handleSettingsSelect = React.useCallback(
+		(settingsPath: string | null) => {
+			if (pendingWorktree) {
+				launchNewSession(pendingWorktree, settingsPath || undefined);
+				setPendingWorktree(null);
+				setSettingsFiles([]);
+			}
+		},
+		[pendingWorktree, launchNewSession],
+	);
+
+	const handleSettingsBack = React.useCallback(() => {
+		setPendingWorktree(null);
+		setSettingsFiles([]);
+		switchToWorktree();
+	}, [switchToWorktree]);
 
 	// Render appropriate screen based on current state
 	if (currentScreen === SCREENS.MENU) {
@@ -220,6 +278,17 @@ const App: React.FC = () => {
 			<BranchInput
 				onSubmit={handleBranchSubmit}
 				onBack={handleBranchInputBack}
+			/>
+		);
+	}
+
+	if (currentScreen === SCREENS.SETTINGS_SELECT && pendingWorktree) {
+		return (
+			<SettingsSelector
+				settingsFiles={settingsFiles}
+				workingDirectory={pendingWorktree}
+				onSelect={handleSettingsSelect}
+				onBack={handleSettingsBack}
 			/>
 		);
 	}

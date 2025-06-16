@@ -11,6 +11,7 @@ export const SCREENS = {
 	CLAUDE: "claude",
 	WORKTREE: "worktree",
 	BRANCH_INPUT: "branch_input",
+	SETTINGS_SELECT: "settings_select",
 } as const;
 
 export const SESSION_PREFIX = "session-";

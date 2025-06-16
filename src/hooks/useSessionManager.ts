@@ -57,6 +57,11 @@ export const useSessionManager = () => {
 		setCurrentSessionId(null);
 	}, []);
 
+	const switchToSettingsSelect = React.useCallback(() => {
+		setCurrentScreen("settings_select");
+		setCurrentSessionId(null);
+	}, []);
+
 	const killAllSessions = React.useCallback(() => {
 		for (const session of sessions) {
 			if (session.dataDisposable) {
@@ -100,6 +105,7 @@ export const useSessionManager = () => {
 		switchToSession,
 		switchToWorktree,
 		switchToBranchInput,
+		switchToSettingsSelect,
 		killAllSessions,
 		appendOutput,
 	};

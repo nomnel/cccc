@@ -75,6 +75,9 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 									const workingDirDisplay = session.workingDirectory
 										? ` [${path.basename(session.workingDirectory)}]`
 										: "";
+									const settingsDisplay = session.settingsPath
+										? ` {${path.relative(session.workingDirectory || process.cwd(), session.settingsPath)}}`
+										: "";
 									return (
 										<>
 											{" "}
@@ -83,6 +86,7 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 												{session.status}
 											</Text>
 											]{workingDirDisplay}
+											{settingsDisplay}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>
 									);

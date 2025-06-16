@@ -1,6 +1,11 @@
 import type pty from "node-pty";
 
-export type Screen = "menu" | "claude" | "worktree" | "branch_input";
+export type Screen =
+	| "menu"
+	| "claude"
+	| "worktree"
+	| "branch_input"
+	| "settings_select";
 
 export type Session = {
 	id: string;
@@ -10,6 +15,7 @@ export type Session = {
 	status: "Idle" | "Running" | "Awaiting Input";
 	preview: string;
 	workingDirectory?: string;
+	settingsPath?: string;
 	dataDisposable?: { dispose: () => void };
 };
 
