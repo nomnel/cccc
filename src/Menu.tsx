@@ -9,7 +9,6 @@ interface MenuProps {
 	sessions: Session[];
 }
 
-
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 
@@ -27,7 +26,6 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		if (minutes > 0) return `${minutes}m ago`;
 		return "just now";
 	};
-
 
 	// Build options array: start, worktree, sessions, exit
 	const options = React.useMemo(() => {
@@ -80,8 +78,11 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 									return (
 										<>
 											{" "}
-											({timestamp}) [<Text color={statusColor} key={`status-${session.id}`}>{session.status}</Text>]
-											{workingDirDisplay}
+											({timestamp}) [
+											<Text color={statusColor} key={`status-${session.id}`}>
+												{session.status}
+											</Text>
+											]{workingDirDisplay}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>
 									);

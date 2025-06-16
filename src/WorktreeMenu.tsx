@@ -114,7 +114,9 @@ export const WorktreeMenu: React.FC<WorktreeMenuProps> = ({
 			<Text color="blue" bold>
 				Select a Git Worktree:
 			</Text>
-			<Text color="dim">Use ↑/↓ to navigate, Enter to select, Esc to go back</Text>
+			<Text color="dim">
+				Use ↑/↓ to navigate, Enter to select, Esc to go back
+			</Text>
 			<Text> </Text>
 			{options.map((option, index) => {
 				const isSelected = selectedIndex === index;
@@ -143,9 +145,7 @@ export const WorktreeMenu: React.FC<WorktreeMenuProps> = ({
 							{isSelected ? "▶ " : "  "}
 							{displayName}
 						</Text>
-						{isSelected && (
-							<Text color="dim"> → {worktree.path}</Text>
-						)}
+						{isSelected && <Text color="dim"> → {worktree.path}</Text>}
 					</Box>
 				);
 			})}

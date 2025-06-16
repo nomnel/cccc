@@ -7,7 +7,10 @@ interface BranchInputProps {
 	onBack: () => void;
 }
 
-export const BranchInput: React.FC<BranchInputProps> = ({ onSubmit, onBack }) => {
+export const BranchInput: React.FC<BranchInputProps> = ({
+	onSubmit,
+	onBack,
+}) => {
 	const [branchName, setBranchName] = React.useState("");
 	const [error, setError] = React.useState<string | null>(null);
 
@@ -19,7 +22,7 @@ export const BranchInput: React.FC<BranchInputProps> = ({ onSubmit, onBack }) =>
 
 	const handleSubmit = (value: string) => {
 		const trimmedValue = value.trim();
-		
+
 		if (!trimmedValue) {
 			setError("Branch name cannot be empty");
 			return;
@@ -28,7 +31,9 @@ export const BranchInput: React.FC<BranchInputProps> = ({ onSubmit, onBack }) =>
 		// Basic validation for branch name
 		const invalidChars = /[^\w\-\.\/]/;
 		if (invalidChars.test(trimmedValue)) {
-			setError("Branch name contains invalid characters. Use only letters, numbers, hyphens, dots, and slashes.");
+			setError(
+				"Branch name contains invalid characters. Use only letters, numbers, hyphens, dots, and slashes.",
+			);
 			return;
 		}
 

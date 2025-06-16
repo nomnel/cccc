@@ -318,7 +318,11 @@ describe("Menu", () => {
 			const sessions: Session[] = [];
 
 			// オプション配列の検証のため、実際のコンポーネントロジックをテスト
-			const expectedOptions = [MENU_OPTIONS.START, MENU_OPTIONS.WORKTREE, MENU_OPTIONS.EXIT];
+			const expectedOptions = [
+				MENU_OPTIONS.START,
+				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.EXIT,
+			];
 
 			// コンポーネント内でのオプション生成ロジックをテスト
 			const options = [

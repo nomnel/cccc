@@ -82,7 +82,9 @@ export const getWorktrees = (cwd: string = process.cwd()): GitWorktree[] => {
 
 		return worktrees;
 	} catch (error) {
-		throw new Error(`Failed to get worktrees: ${error instanceof Error ? error.message : String(error)}`);
+		throw new Error(
+			`Failed to get worktrees: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 };
 
@@ -98,7 +100,10 @@ export const getWorktreeDisplayName = (worktree: GitWorktree): string => {
 /**
  * Get relative path from git root
  */
-export const getRelativePath = (absolutePath: string, gitRoot: string): string => {
+export const getRelativePath = (
+	absolutePath: string,
+	gitRoot: string,
+): string => {
 	return path.relative(gitRoot, absolutePath) || ".";
 };
 
@@ -117,15 +122,21 @@ export const sanitizeBranchNameForDirectory = (branchName: string): string => {
 /**
  * Check if a worktree already exists
  */
-export const worktreeExists = (worktreePath: string, cwd: string = process.cwd()): boolean => {
+export const worktreeExists = (
+	worktreePath: string,
+	cwd: string = process.cwd(),
+): boolean => {
 	const worktrees = getWorktrees(cwd);
-	return worktrees.some(wt => wt.path === worktreePath);
+	return worktrees.some((wt) => wt.path === worktreePath);
 };
 
 /**
  * Create a new git worktree
  */
-export const createWorktree = (branchName: string, cwd: string = process.cwd()): string => {
+export const createWorktree = (
+	branchName: string,
+	cwd: string = process.cwd(),
+): string => {
 	const gitRoot = getGitRoot(cwd);
 	if (!gitRoot) {
 		throw new Error("Not in a git repository");
@@ -161,6 +172,8 @@ export const createWorktree = (branchName: string, cwd: string = process.cwd()):
 
 		return worktreePath;
 	} catch (error) {
-		throw new Error(`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`);
+		throw new Error(
+			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+		);
 	}
 };

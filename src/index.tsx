@@ -56,59 +56,63 @@ const App: React.FC = () => {
 		}
 	});
 
-	const launchNewSession = React.useCallback((workingDirectory?: string) => {
-		const args = process.argv.slice(2);
-		const sessionId = generateSessionId();
+	const launchNewSession = React.useCallback(
+		(workingDirectory?: string) => {
+			const args = process.argv.slice(2);
+			const sessionId = generateSessionId();
 
-		clearScreen();
-
-		const ptyProcess = createPtyProcess(args, workingDirectory);
-
-		// Set up persistent data listener that always captures output
-		const dataDisposable = setupPersistentDataListener(
-			ptyProcess,
-			(data) => appendOutput(sessionId, Buffer.from(data)),
-			() => currentScreen === SCREENS.CLAUDE && currentSessionId === sessionId,
-		);
-
-		// Set up exit handler
-		ptyProcess.onExit(() => {
-			dataDisposable.dispose();
-			removeSession(sessionId);
 			clearScreen();
-			switchToMenu();
-		});
 
-		// Set up active session listeners
-		const listeners = setupActiveSessionListeners(ptyProcess);
-		setListeners(listeners);
-		const newSession: Session = {
-			id: sessionId,
-			process: ptyProcess,
-			outputs: [],
-			lastUpdated: new Date(),
-			status: "Idle",
-			preview: "",
-			workingDirectory,
-			dataDisposable,
-		};
-		addSession(newSession);
-		switchToSession(sessionId);
-	}, [
-		generateSessionId,
-		clearScreen,
-		createPtyProcess,
-		setupPersistentDataListener,
-		setupActiveSessionListeners,
-		setListeners,
-		addSession,
-		removeSession,
-		switchToSession,
-		switchToMenu,
-		appendOutput,
-		currentScreen,
-		currentSessionId,
-	]);
+			const ptyProcess = createPtyProcess(args, workingDirectory);
+
+			// Set up persistent data listener that always captures output
+			const dataDisposable = setupPersistentDataListener(
+				ptyProcess,
+				(data) => appendOutput(sessionId, Buffer.from(data)),
+				() =>
+					currentScreen === SCREENS.CLAUDE && currentSessionId === sessionId,
+			);
+
+			// Set up exit handler
+			ptyProcess.onExit(() => {
+				dataDisposable.dispose();
+				removeSession(sessionId);
+				clearScreen();
+				switchToMenu();
+			});
+
+			// Set up active session listeners
+			const listeners = setupActiveSessionListeners(ptyProcess);
+			setListeners(listeners);
+			const newSession: Session = {
+				id: sessionId,
+				process: ptyProcess,
+				outputs: [],
+				lastUpdated: new Date(),
+				status: "Idle",
+				preview: "",
+				workingDirectory,
+				dataDisposable,
+			};
+			addSession(newSession);
+			switchToSession(sessionId);
+		},
+		[
+			generateSessionId,
+			clearScreen,
+			createPtyProcess,
+			setupPersistentDataListener,
+			setupActiveSessionListeners,
+			setListeners,
+			addSession,
+			removeSession,
+			switchToSession,
+			switchToMenu,
+			appendOutput,
+			currentScreen,
+			currentSessionId,
+		],
+	);
 
 	const switchToExistingSession = React.useCallback(
 		(sessionId: string) => {
@@ -151,7 +155,13 @@ const App: React.FC = () => {
 				switchToExistingSession(option);
 			}
 		},
-		[switchToBranchInput, switchToWorktree, killAllSessions, exit, switchToExistingSession],
+		[
+			switchToBranchInput,
+			switchToWorktree,
+			killAllSessions,
+			exit,
+			switchToExistingSession,
+		],
 	);
 
 	const handleWorktreeSelect = React.useCallback(
@@ -175,7 +185,7 @@ const App: React.FC = () => {
 
 				// Create the worktree with the provided branch name
 				const worktreePath = createWorktree(branchName);
-				
+
 				// Launch a new session in the created worktree
 				launchNewSession(worktreePath);
 			} catch (error) {
