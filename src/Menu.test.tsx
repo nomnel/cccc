@@ -85,13 +85,15 @@ describe("Menu", () => {
 		const { MENU_OPTIONS } = await import("./constants.js");
 
 		expect(MENU_OPTIONS.START).toBeDefined();
+		expect(MENU_OPTIONS.WORKTREE).toBeDefined();
 		expect(MENU_OPTIONS.EXIT).toBeDefined();
 		expect(typeof MENU_OPTIONS.START).toBe("string");
+		expect(typeof MENU_OPTIONS.WORKTREE).toBe("string");
 		expect(typeof MENU_OPTIONS.EXIT).toBe("string");
 	});
 
 	describe("メニューオプションの表示", () => {
-		it("セッションなしの場合、START と EXIT オプションが表示される", () => {
+		it("セッションなしの場合、START、WORKTREE、EXIT オプションが表示される", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = [];
 
@@ -108,10 +110,11 @@ describe("Menu", () => {
 			);
 
 			expect(textContents).toContain(`▶ ${MENU_OPTIONS.START}`);
+			expect(textContents).toContain(`  ${MENU_OPTIONS.WORKTREE}`);
 			expect(textContents).toContain(`  ${MENU_OPTIONS.EXIT}`);
 		});
 
-		it("セッションありの場合、START、セッション、EXIT の順で表示される", () => {
+		it("セッションありの場合、START、WORKTREE、セッション、EXIT の順で表示される", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = [
 				{
@@ -310,23 +313,24 @@ describe("Menu", () => {
 	});
 
 	describe("オプション配列の生成", () => {
-		it("セッションがない場合はSTARTとEXITのみ", () => {
+		it("セッションがない場合はSTART、WORKTREE、EXITのみ", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = [];
 
 			// オプション配列の検証のため、実際のコンポーネントロジックをテスト
-			const expectedOptions = [MENU_OPTIONS.START, MENU_OPTIONS.EXIT];
+			const expectedOptions = [MENU_OPTIONS.START, MENU_OPTIONS.WORKTREE, MENU_OPTIONS.EXIT];
 
 			// コンポーネント内でのオプション生成ロジックをテスト
 			const options = [
 				MENU_OPTIONS.START,
+				MENU_OPTIONS.WORKTREE,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];
 			expect(options).toEqual(expectedOptions);
 		});
 
-		it("セッションがある場合はSTART、セッション、EXITの順", () => {
+		it("セッションがある場合はSTART、WORKTREE、セッション、EXITの順", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = [
 				{
@@ -349,6 +353,7 @@ describe("Menu", () => {
 
 			const expectedOptions = [
 				MENU_OPTIONS.START,
+				MENU_OPTIONS.WORKTREE,
 				"session-1",
 				"session-2",
 				MENU_OPTIONS.EXIT,
@@ -356,6 +361,7 @@ describe("Menu", () => {
 
 			const options = [
 				MENU_OPTIONS.START,
+				MENU_OPTIONS.WORKTREE,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];
@@ -373,9 +379,10 @@ describe("Menu", () => {
 				preview: "",
 			}));
 
-			const expectedLength = 1 + sessions.length + 1; // START + セッション数 + EXIT
+			const expectedLength = 1 + 1 + sessions.length + 1; // START + WORKTREE + セッション数 + EXIT
 			const options = [
 				MENU_OPTIONS.START,
+				MENU_OPTIONS.WORKTREE,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];

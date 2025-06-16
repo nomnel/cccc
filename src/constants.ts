@@ -9,11 +9,14 @@ export const TERMINAL_CONFIG = {
 export const SCREENS = {
 	MENU: "menu",
 	CLAUDE: "claude",
+	WORKTREE: "worktree",
+	BRANCH_INPUT: "branch_input",
 } as const;
 
 export const SESSION_PREFIX = "session-";
 
 export const MENU_OPTIONS = {
 	START: "start",
+	WORKTREE: "worktree",
 	EXIT: "exit",
 } as const;

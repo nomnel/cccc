@@ -47,6 +47,16 @@ export const useSessionManager = () => {
 		setCurrentSessionId(sessionId);
 	}, []);
 
+	const switchToWorktree = React.useCallback(() => {
+		setCurrentScreen("worktree");
+		setCurrentSessionId(null);
+	}, []);
+
+	const switchToBranchInput = React.useCallback(() => {
+		setCurrentScreen("branch_input");
+		setCurrentSessionId(null);
+	}, []);
+
 	const killAllSessions = React.useCallback(() => {
 		for (const session of sessions) {
 			if (session.dataDisposable) {
@@ -88,6 +98,8 @@ export const useSessionManager = () => {
 		findSession,
 		switchToMenu,
 		switchToSession,
+		switchToWorktree,
+		switchToBranchInput,
 		killAllSessions,
 		appendOutput,
 	};

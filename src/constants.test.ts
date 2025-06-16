@@ -34,11 +34,13 @@ describe("constants", () => {
 		it("すべての画面タイプが定義されている", () => {
 			expect(SCREENS.MENU).toBe("menu");
 			expect(SCREENS.CLAUDE).toBe("claude");
+			expect(SCREENS.WORKTREE).toBe("worktree");
 		});
 
 		it("すべての値が文字列である", () => {
 			expect(typeof SCREENS.MENU).toBe("string");
 			expect(typeof SCREENS.CLAUDE).toBe("string");
+			expect(typeof SCREENS.WORKTREE).toBe("string");
 		});
 	});
 
@@ -53,11 +55,13 @@ describe("constants", () => {
 	describe("MENU_OPTIONS", () => {
 		it("すべてのメニューオプションが定義されている", () => {
 			expect(MENU_OPTIONS.START).toBe("start");
+			expect(MENU_OPTIONS.WORKTREE).toBe("worktree");
 			expect(MENU_OPTIONS.EXIT).toBe("exit");
 		});
 
 		it("すべての値が文字列である", () => {
 			expect(typeof MENU_OPTIONS.START).toBe("string");
+			expect(typeof MENU_OPTIONS.WORKTREE).toBe("string");
 			expect(typeof MENU_OPTIONS.EXIT).toBe("string");
 		});
 	});

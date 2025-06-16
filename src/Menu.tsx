@@ -2,6 +2,7 @@ import * as React from "react";
 import { Box, Text, useInput } from "ink";
 import { MENU_OPTIONS } from "./constants.js";
 import type { Session } from "./types.js";
+import path from "node:path";
 
 interface MenuProps {
 	onSelect: (option: string) => void;
@@ -28,9 +29,9 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	};
 
 
-	// Build options array: start, sessions, exit
+	// Build options array: start, worktree, sessions, exit
 	const options = React.useMemo(() => {
-		const result: string[] = [MENU_OPTIONS.START];
+		const result: string[] = [MENU_OPTIONS.START, MENU_OPTIONS.WORKTREE];
 		for (const session of sessions) {
 			result.push(session.id);
 		}
@@ -61,6 +62,7 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 						{selectedIndex === index ? "▶ " : "  "}
 						{option}
 						{option !== MENU_OPTIONS.START &&
+							option !== MENU_OPTIONS.WORKTREE &&
 							option !== MENU_OPTIONS.EXIT &&
 							(() => {
 								const session = sessions.find((s) => s.id === option);
@@ -72,10 +74,14 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 												? "cyan"
 												: "dim";
 									const timestamp = formatTimestamp(session.lastUpdated);
+									const workingDirDisplay = session.workingDirectory
+										? ` [${path.basename(session.workingDirectory)}]`
+										: "";
 									return (
 										<>
 											{" "}
-											({timestamp}) [<Text color={statusColor}>{session.status}</Text>]
+											({timestamp}) [<Text color={statusColor} key={`status-${session.id}`}>{session.status}</Text>]
+											{workingDirDisplay}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>
 									);

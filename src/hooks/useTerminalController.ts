@@ -15,12 +15,12 @@ export const useTerminalController = () => {
 		process.stdin.resume();
 	}, []);
 
-	const createPtyProcess = React.useCallback((args: string[] = []) => {
+	const createPtyProcess = React.useCallback((args: string[] = [], cwd?: string) => {
 		return pty.spawn(TERMINAL_CONFIG.PROCESS_NAME, args, {
 			name: TERMINAL_CONFIG.XTERM_NAME,
 			cols: process.stdout.columns || TERMINAL_CONFIG.DEFAULT_COLS,
 			rows: process.stdout.rows || TERMINAL_CONFIG.DEFAULT_ROWS,
-			cwd: process.cwd(),
+			cwd: cwd || process.cwd(),
 			env: process.env,
 		});
 	}, []);

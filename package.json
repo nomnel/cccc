@@ -26,6 +26,7 @@
 		"@biomejs/biome": "1.9.4",
 		"@testing-library/jest-dom": "^6.6.3",
 		"@testing-library/react": "^16.3.0",
+		"@types/ink-text-input": "^2.0.5",
 		"@types/node": "^22.10.3",
 		"@vitest/ui": "^3.2.3",
 		"ink-testing-library": "^4.0.0",
@@ -36,6 +37,7 @@
 	"dependencies": {
 		"@types/react": "^19.1.8",
 		"ink": "^6.0.0",
+		"ink-text-input": "^6.0.0",
 		"node-pty": "^1.0.0",
 		"react": "^19.1.0",
 		"strip-ansi": "^7.1.0"

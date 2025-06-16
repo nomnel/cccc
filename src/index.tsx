@@ -1,12 +1,16 @@
 import * as React from "react";
 import { render, useInput, useApp } from "ink";
 import { Menu } from "./Menu.js";
+import { WorktreeMenu } from "./WorktreeMenu.js";
+import { BranchInput } from "./BranchInput.js";
 import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useEventListeners } from "./hooks/useEventListeners.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import { MENU_OPTIONS, SCREENS } from "./constants.js";
 import { isMenuOption } from "./utils.js";
+import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
 import type { Session } from "./types.js";
+import path from "node:path";
 
 const App: React.FC = () => {
 	const {
@@ -19,6 +23,8 @@ const App: React.FC = () => {
 		findSession,
 		switchToMenu,
 		switchToSession,
+		switchToWorktree,
+		switchToBranchInput,
 		killAllSessions,
 		appendOutput,
 	} = useSessionManager();
@@ -50,13 +56,13 @@ const App: React.FC = () => {
 		}
 	});
 
-	const launchNewSession = React.useCallback(() => {
+	const launchNewSession = React.useCallback((workingDirectory?: string) => {
 		const args = process.argv.slice(2);
 		const sessionId = generateSessionId();
 
 		clearScreen();
 
-		const ptyProcess = createPtyProcess(args);
+		const ptyProcess = createPtyProcess(args, workingDirectory);
 
 		// Set up persistent data listener that always captures output
 		const dataDisposable = setupPersistentDataListener(
@@ -83,6 +89,7 @@ const App: React.FC = () => {
 			lastUpdated: new Date(),
 			status: "Idle",
 			preview: "",
+			workingDirectory,
 			dataDisposable,
 		};
 		addSession(newSession);
@@ -133,7 +140,9 @@ const App: React.FC = () => {
 	const handleSelect = React.useCallback(
 		(option: string) => {
 			if (option === MENU_OPTIONS.START) {
-				launchNewSession();
+				switchToBranchInput();
+			} else if (option === MENU_OPTIONS.WORKTREE) {
+				switchToWorktree();
 			} else if (option === MENU_OPTIONS.EXIT) {
 				killAllSessions();
 				exit();
@@ -142,12 +151,67 @@ const App: React.FC = () => {
 				switchToExistingSession(option);
 			}
 		},
-		[launchNewSession, killAllSessions, exit, switchToExistingSession],
+		[switchToBranchInput, switchToWorktree, killAllSessions, exit, switchToExistingSession],
 	);
 
-	// Only render menu when on menu screen
+	const handleWorktreeSelect = React.useCallback(
+		(worktreePath: string) => {
+			launchNewSession(worktreePath);
+		},
+		[launchNewSession],
+	);
+
+	const handleWorktreeBack = React.useCallback(() => {
+		switchToMenu();
+	}, [switchToMenu]);
+
+	const handleBranchSubmit = React.useCallback(
+		(branchName: string) => {
+			try {
+				// Check if we're in a git repository
+				if (!isGitRepo()) {
+					throw new Error("Not in a git repository");
+				}
+
+				// Create the worktree with the provided branch name
+				const worktreePath = createWorktree(branchName);
+				
+				// Launch a new session in the created worktree
+				launchNewSession(worktreePath);
+			} catch (error) {
+				// For now, just log the error and return to menu
+				console.error("Failed to create worktree:", error);
+				switchToMenu();
+			}
+		},
+		[launchNewSession, switchToMenu],
+	);
+
+	const handleBranchInputBack = React.useCallback(() => {
+		switchToMenu();
+	}, [switchToMenu]);
+
+	// Render appropriate screen based on current state
 	if (currentScreen === SCREENS.MENU) {
 		return <Menu onSelect={handleSelect} sessions={sessions} />;
+	}
+
+	if (currentScreen === SCREENS.WORKTREE) {
+		return (
+			<WorktreeMenu
+				onSelect={handleWorktreeSelect}
+				onBack={handleWorktreeBack}
+			/>
+		);
+	}
+
+	if (currentScreen === SCREENS.BRANCH_INPUT) {
+		return (
+			<BranchInput
+				onSubmit={handleBranchSubmit}
+				onBack={handleBranchInputBack}
+			/>
+		);
 	}
 
 	// Return null when claude is running
