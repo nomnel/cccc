@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import path from "node:path";
 import {
-	findHomeSettingsFiles,
+	findSettingsFiles,
 	copySettingsToWorktree,
 	getSettingsDisplayName,
 } from "./settingsUtils.js";
@@ -45,9 +45,9 @@ describe("settingsUtils", () => {
 		rmSync(testDir, { recursive: true, force: true });
 	});
 
-	describe("findHomeSettingsFiles", () => {
+	describe("findSettingsFiles", () => {
 		it("should find all settings.*.json files in ~/.claude/", () => {
-			const settings = findHomeSettingsFiles(mockHomeDir);
+			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
 			expect(settings).toHaveLength(3);
 
 			const names = settings.map((s) => s.name).sort();
@@ -62,7 +62,7 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include settings.json without a name part", () => {
-			const settings = findHomeSettingsFiles(mockHomeDir);
+			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
 			const hasDefaultSettings = settings.some(
 				(s) => s.filename === "settings.json",
 			);
@@ -70,21 +70,43 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include non-settings files", () => {
-			const settings = findHomeSettingsFiles(mockHomeDir);
+			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
 			const hasConfigFile = settings.some((s) => s.filename === "config.json");
 			expect(hasConfigFile).toBe(false);
 		});
 
 		it("should handle missing ~/.claude directory", () => {
 			rmSync(claudeDir, { recursive: true });
-			const settings = findHomeSettingsFiles(mockHomeDir);
+			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
 			expect(settings).toHaveLength(0);
 		});
 
 		it("should ignore directories", () => {
 			mkdirSync(path.join(claudeDir, "settings.subdir.json"));
-			const settings = findHomeSettingsFiles(mockHomeDir);
+			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
 			expect(settings).toHaveLength(3); // Still only the 3 files
+		});
+
+		it("should find settings in both home and local directories", () => {
+			// Create local .claude directory with settings
+			const localDir = path.join(testDir, "local-project");
+			const localClaudeDir = path.join(localDir, ".claude");
+			mkdirSync(localClaudeDir, { recursive: true });
+			
+			writeFileSync(
+				path.join(localClaudeDir, "settings.local-dev.json"),
+				JSON.stringify({ name: "Local Development" }),
+			);
+			
+			const settings = findSettingsFiles(mockHomeDir, localDir);
+			expect(settings).toHaveLength(4); // 3 from home + 1 from local
+			
+			// Check that sources are correctly assigned
+			const homeSetting = settings.find(s => s.name === "dev");
+			const localSetting = settings.find(s => s.name === "local-dev");
+			
+			expect(homeSetting?.source).toBe("home");
+			expect(localSetting?.source).toBe("local");
 		});
 	});
 
@@ -138,22 +160,24 @@ describe("settingsUtils", () => {
 	});
 
 	describe("getSettingsDisplayName", () => {
-		it("should return the name part of the settings file", () => {
+		it("should show name with home source", () => {
 			const settings = {
 				path: "/home/user/.claude/settings.dev.json",
 				filename: "settings.dev.json",
 				name: "dev",
+				source: "home" as const,
 			};
-			expect(getSettingsDisplayName(settings)).toBe("dev");
+			expect(getSettingsDisplayName(settings)).toBe("dev (~/.claude/)");
 		});
 
-		it("should handle complex names", () => {
+		it("should show name with local source", () => {
 			const settings = {
-				path: "/home/user/.claude/settings.my-project.json",
-				filename: "settings.my-project.json",
-				name: "my-project",
+				path: "/project/.claude/settings.local-dev.json",
+				filename: "settings.local-dev.json",
+				name: "local-dev",
+				source: "local" as const,
 			};
-			expect(getSettingsDisplayName(settings)).toBe("my-project");
+			expect(getSettingsDisplayName(settings)).toBe("local-dev (./.claude/)");
 		});
 	});
 });

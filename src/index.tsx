@@ -11,7 +11,7 @@ import { MENU_OPTIONS, SCREENS } from "./constants.js";
 import { isMenuOption } from "./utils.js";
 import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
 import {
-	findHomeSettingsFiles,
+	findSettingsFiles,
 	copySettingsToWorktree,
 	type SettingsFile,
 } from "./utils/settingsUtils.js";
@@ -189,8 +189,8 @@ const App: React.FC = () => {
 
 	const handleWorktreeSelect = React.useCallback(
 		(worktreePath: string) => {
-			// Check for settings files in ~/.claude/
-			const settings = findHomeSettingsFiles();
+			// Check for settings files in ~/.claude/ and ./.claude/
+			const settings = findSettingsFiles();
 
 			if (settings.length > 0) {
 				// Settings found, show selector
@@ -220,8 +220,8 @@ const App: React.FC = () => {
 				// Create the worktree with the provided branch name
 				const worktreePath = createWorktree(branchName);
 
-				// Check for settings files in ~/.claude/
-				const settings = findHomeSettingsFiles();
+				// Check for settings files in ~/.claude/ and ./.claude/
+				const settings = findSettingsFiles();
 
 				if (settings.length > 0) {
 					// Settings found, show selector
