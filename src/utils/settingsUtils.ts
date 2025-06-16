@@ -1,74 +1,80 @@
-import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
+import {
+	readdirSync,
+	statSync,
+	existsSync,
+	readFileSync,
+	copyFileSync,
+	mkdirSync,
+} from "node:fs";
 import path from "node:path";
+import { homedir } from "node:os";
 
 export interface SettingsFile {
 	path: string;
-	relativePath: string;
-	name?: string;
+	filename: string;
+	name: string; // The part between "settings." and ".json"
 }
 
 /**
- * Recursively find all .claude/settings.json files in a directory
+ * Find all settings.*.json files in ~/.claude/ directory
  */
-export const findSettingsFiles = (rootDir: string): SettingsFile[] => {
+export const findHomeSettingsFiles = (homeDir?: string): SettingsFile[] => {
 	const settingsFiles: SettingsFile[] = [];
+	const home = homeDir || homedir();
+	const claudeDir = path.join(home, ".claude");
 
-	const searchDirectory = (dir: string) => {
-		try {
-			const entries = readdirSync(dir, { withFileTypes: true });
+	if (!existsSync(claudeDir)) {
+		return settingsFiles;
+	}
 
-			for (const entry of entries) {
-				const fullPath = path.join(dir, entry.name);
+	try {
+		const entries = readdirSync(claudeDir);
 
-				if (entry.isDirectory()) {
-					// Check if this is a .claude directory
-					if (entry.name === ".claude") {
-						const settingsPath = path.join(fullPath, "settings.json");
-						if (existsSync(settingsPath)) {
-							settingsFiles.push({
-								path: settingsPath,
-								relativePath: path.relative(rootDir, settingsPath),
-								name: tryGetSettingsName(settingsPath),
-							});
-						}
-					}
-					// Continue searching in subdirectories
-					searchDirectory(fullPath);
+		for (const entry of entries) {
+			// Match settings.*.json pattern
+			const match = entry.match(/^settings\.(.+)\.json$/);
+			if (match && match[1]) {
+				const fullPath = path.join(claudeDir, entry);
+				if (statSync(fullPath).isFile()) {
+					settingsFiles.push({
+						path: fullPath,
+						filename: entry,
+						name: match[1], // The part between "settings." and ".json"
+					});
 				}
 			}
-		} catch (error) {
-			// Ignore directories we can't read
 		}
-	};
+	} catch (error) {
+		// Ignore if we can't read the directory
+	}
 
-	searchDirectory(rootDir);
 	return settingsFiles;
 };
 
 /**
- * Try to read a name from the settings file
+ * Copy a settings file to the worktree as settings.local.json
  */
-const tryGetSettingsName = (settingsPath: string): string | undefined => {
-	try {
-		const content = readFileSync(settingsPath, "utf8");
-		const settings = JSON.parse(content);
-		return settings.name || settings.project || undefined;
-	} catch {
-		return undefined;
+export const copySettingsToWorktree = (
+	settingsPath: string,
+	worktreePath: string,
+): string => {
+	const claudeDir = path.join(worktreePath, ".claude");
+	const targetPath = path.join(claudeDir, "settings.local.json");
+
+	// Create .claude directory if it doesn't exist
+	if (!existsSync(claudeDir)) {
+		mkdirSync(claudeDir, { recursive: true });
 	}
+
+	// Copy the settings file
+	copyFileSync(settingsPath, targetPath);
+
+	return targetPath;
 };
 
 /**
  * Get display name for a settings file
  */
 export const getSettingsDisplayName = (settings: SettingsFile): string => {
-	if (settings.name) {
-		return `${settings.name} (${settings.relativePath})`;
-	}
-	// Show parent directory name for context
-	const parentDir = path.dirname(path.dirname(settings.relativePath));
-	if (parentDir && parentDir !== ".") {
-		return `${parentDir}/.claude/settings.json`;
-	}
-	return settings.relativePath;
+	return settings.name;
 };

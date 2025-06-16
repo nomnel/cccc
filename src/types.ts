@@ -16,6 +16,7 @@ export type Session = {
 	preview: string;
 	workingDirectory?: string;
 	settingsPath?: string;
+	settingsName?: string; // Name of the settings file used (e.g., "foo" from "settings.foo.json")
 	dataDisposable?: { dispose: () => void };
 };
 

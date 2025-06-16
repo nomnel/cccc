@@ -10,7 +10,11 @@ import { useTerminalController } from "./hooks/useTerminalController.js";
 import { MENU_OPTIONS, SCREENS } from "./constants.js";
 import { isMenuOption } from "./utils.js";
 import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
-import { findSettingsFiles, type SettingsFile } from "./utils/settingsUtils.js";
+import {
+	findHomeSettingsFiles,
+	copySettingsToWorktree,
+	type SettingsFile,
+} from "./utils/settingsUtils.js";
 import type { Session } from "./types.js";
 import path from "node:path";
 
@@ -66,7 +70,11 @@ const App: React.FC = () => {
 	});
 
 	const launchNewSession = React.useCallback(
-		(workingDirectory?: string, settingsPath?: string) => {
+		(
+			workingDirectory?: string,
+			settingsPath?: string,
+			settingsName?: string,
+		) => {
 			const args = process.argv.slice(2);
 			const sessionId = generateSessionId();
 
@@ -106,6 +114,7 @@ const App: React.FC = () => {
 				preview: "",
 				workingDirectory,
 				settingsPath,
+				settingsName,
 				dataDisposable,
 			};
 			addSession(newSession);
@@ -180,17 +189,14 @@ const App: React.FC = () => {
 
 	const handleWorktreeSelect = React.useCallback(
 		(worktreePath: string) => {
-			// Check for settings files in the worktree
-			const settings = findSettingsFiles(worktreePath);
+			// Check for settings files in ~/.claude/
+			const settings = findHomeSettingsFiles();
 
-			if (settings.length > 1) {
-				// Multiple settings found, show selector
+			if (settings.length > 0) {
+				// Settings found, show selector
 				setPendingWorktree(worktreePath);
 				setSettingsFiles(settings);
 				switchToSettingsSelect();
-			} else if (settings.length === 1) {
-				// Single settings file, use it automatically
-				launchNewSession(worktreePath, settings[0]?.path);
 			} else {
 				// No settings files
 				launchNewSession(worktreePath);
@@ -214,17 +220,14 @@ const App: React.FC = () => {
 				// Create the worktree with the provided branch name
 				const worktreePath = createWorktree(branchName);
 
-				// Check for settings files in the new worktree
-				const settings = findSettingsFiles(worktreePath);
+				// Check for settings files in ~/.claude/
+				const settings = findHomeSettingsFiles();
 
-				if (settings.length > 1) {
-					// Multiple settings found, show selector
+				if (settings.length > 0) {
+					// Settings found, show selector
 					setPendingWorktree(worktreePath);
 					setSettingsFiles(settings);
 					switchToSettingsSelect();
-				} else if (settings.length === 1) {
-					// Single settings file, use it automatically
-					launchNewSession(worktreePath, settings[0]?.path);
 				} else {
 					// No settings files
 					launchNewSession(worktreePath);
@@ -243,9 +246,21 @@ const App: React.FC = () => {
 	}, [switchToMenu]);
 
 	const handleSettingsSelect = React.useCallback(
-		(settingsPath: string | null) => {
+		(settingsPath: string | null, settingsName?: string) => {
 			if (pendingWorktree) {
-				launchNewSession(pendingWorktree, settingsPath || undefined);
+				let localSettingsPath: string | undefined;
+				if (settingsPath) {
+					try {
+						// Copy the settings file to the worktree
+						localSettingsPath = copySettingsToWorktree(
+							settingsPath,
+							pendingWorktree,
+						);
+					} catch (error) {
+						console.error("Failed to copy settings file:", error);
+					}
+				}
+				launchNewSession(pendingWorktree, localSettingsPath, settingsName);
 				setPendingWorktree(null);
 				setSettingsFiles([]);
 			}

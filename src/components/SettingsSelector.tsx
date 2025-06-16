@@ -6,7 +6,7 @@ import { getSettingsDisplayName } from "../utils/settingsUtils.js";
 interface SettingsSelectorProps {
 	settingsFiles: SettingsFile[];
 	workingDirectory: string;
-	onSelect: (settingsPath: string | null) => void;
+	onSelect: (settingsPath: string | null, settingsName?: string) => void;
 	onBack: () => void;
 }
 
@@ -20,13 +20,18 @@ export const SettingsSelector: React.FC<SettingsSelectorProps> = ({
 
 	// Options: settings files + "no settings" + back
 	const options = React.useMemo(() => {
-		const result: Array<{ label: string; value: string | null }> = [];
+		const result: Array<{
+			label: string;
+			value: string | null;
+			settingsName?: string;
+		}> = [];
 
 		// Add settings files
 		for (const settings of settingsFiles) {
 			result.push({
 				label: getSettingsDisplayName(settings),
 				value: settings.path,
+				settingsName: settings.name,
 			});
 		}
 
@@ -57,7 +62,7 @@ export const SettingsSelector: React.FC<SettingsSelectorProps> = ({
 			if (option?.value === "back") {
 				onBack();
 			} else if (option) {
-				onSelect(option.value);
+				onSelect(option.value, option.settingsName);
 			}
 		}
 		if (key.escape) {
@@ -68,7 +73,7 @@ export const SettingsSelector: React.FC<SettingsSelectorProps> = ({
 	return (
 		<Box flexDirection="column">
 			<Text color="blue" bold>
-				Multiple settings files found in worktree:
+				Select settings file for worktree:
 			</Text>
 			<Text color="dim">{workingDirectory}</Text>
 			<Text color="dim">
@@ -82,7 +87,7 @@ export const SettingsSelector: React.FC<SettingsSelectorProps> = ({
 					option.value === null && option.label.includes("without");
 
 				return (
-					<Box key={index}>
+					<Box key={option.value || `option-${index}`}>
 						<Text
 							color={
 								isSelected

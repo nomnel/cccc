@@ -75,8 +75,8 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 									const workingDirDisplay = session.workingDirectory
 										? ` [${path.basename(session.workingDirectory)}]`
 										: "";
-									const settingsDisplay = session.settingsPath
-										? ` {${path.relative(session.workingDirectory || process.cwd(), session.settingsPath)}}`
+									const settingsDisplay = session.settingsName
+										? ` {${session.settingsName}}`
 										: "";
 									return (
 										<>
