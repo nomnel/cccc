@@ -1,8 +1,8 @@
 import * as React from "react";
 import { render, useInput, useApp } from "ink";
-import { Menu } from "./Menu.js";
-import { WorktreeMenu } from "./WorktreeMenu.js";
-import { BranchInput } from "./BranchInput.js";
+import { Menu } from "./components/Menu.js";
+import { WorktreeMenu } from "./components/WorktreeMenu.js";
+import { BranchInput } from "./components/BranchInput.js";
 import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useEventListeners } from "./hooks/useEventListeners.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";

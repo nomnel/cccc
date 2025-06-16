@@ -46,7 +46,7 @@ const MockMenu = vi.fn(({ onSelect, sessions }) =>
 	),
 );
 
-vi.mock("./Menu.js", () => ({
+vi.mock("./components/Menu.js", () => ({
 	Menu: MockMenu,
 }));
 
@@ -118,7 +118,7 @@ describe("App", () => {
 	});
 
 	it("Menuコンポーネントが正しく読み込める", async () => {
-		const { Menu } = await import("./Menu.js");
+		const { Menu } = await import("./components/Menu.js");
 		expect(typeof Menu).toBe("function");
 	});
 

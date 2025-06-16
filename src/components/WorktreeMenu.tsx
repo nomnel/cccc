@@ -6,7 +6,7 @@ import {
 	isGitRepo,
 	getGitRoot,
 	type GitWorktree,
-} from "./utils/gitUtils.js";
+} from "../utils/gitUtils.js";
 
 interface WorktreeMenuProps {
 	onSelect: (worktreePath: string) => void;

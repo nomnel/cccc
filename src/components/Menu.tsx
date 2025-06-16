@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Box, Text, useInput } from "ink";
-import { MENU_OPTIONS } from "./constants.js";
-import type { Session } from "./types.js";
+import { MENU_OPTIONS } from "../constants.js";
+import type { Session } from "../types.js";
 import path from "node:path";
 
 interface MenuProps {

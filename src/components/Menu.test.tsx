@@ -3,8 +3,8 @@ import React from "react";
 import { render, act } from "@testing-library/react";
 import type { IPty } from "node-pty";
 import { Menu } from "./Menu.js";
-import { MENU_OPTIONS } from "./constants.js";
-import type { Session } from "./types.js";
+import { MENU_OPTIONS } from "../constants.js";
+import type { Session } from "../types.js";
 
 // Inkのモック
 vi.mock("ink", () => {
@@ -82,7 +82,7 @@ describe("Menu", () => {
 	});
 
 	it("必要な定数が正しく定義されている", async () => {
-		const { MENU_OPTIONS } = await import("./constants.js");
+		const { MENU_OPTIONS } = await import("../constants.js");
 
 		expect(MENU_OPTIONS.START).toBeDefined();
 		expect(MENU_OPTIONS.WORKTREE).toBeDefined();
