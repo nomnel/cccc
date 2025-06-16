@@ -1,6 +1,7 @@
 import * as React from "react";
 import { SESSION_PREFIX } from "../constants.js";
 import type { Screen, Session } from "../types.js";
+import { getSessionStatus, getSessionPreview } from "../utils/sessionUtils.js";
 
 export const useSessionManager = () => {
 	const [sessions, setSessions] = React.useState<Session[]>([]);
@@ -59,15 +60,19 @@ export const useSessionManager = () => {
 	const appendOutput = React.useCallback(
 		(sessionId: string, output: Buffer) => {
 			setSessions((prev) =>
-				prev.map((session) =>
-					session.id === sessionId
-						? {
-								...session,
-								outputs: [...session.outputs, output],
-								lastUpdated: new Date(),
-							}
-						: session,
-				),
+				prev.map((session) => {
+					if (session.id === sessionId) {
+						const newOutputs = [...session.outputs, output];
+						return {
+							...session,
+							outputs: newOutputs,
+							lastUpdated: new Date(),
+							status: getSessionStatus(newOutputs),
+							preview: getSessionPreview(newOutputs),
+						};
+					}
+					return session;
+				}),
 			);
 		},
 		[],

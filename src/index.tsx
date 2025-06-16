@@ -81,6 +81,8 @@ const App: React.FC = () => {
 			process: ptyProcess,
 			outputs: [],
 			lastUpdated: new Date(),
+			status: "Idle",
+			preview: "",
 			dataDisposable,
 		};
 		addSession(newSession);

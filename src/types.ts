@@ -7,6 +7,8 @@ export type Session = {
 	process: pty.IPty;
 	outputs: Buffer[];
 	lastUpdated: Date;
+	status: "Idle" | "Running" | "Awaiting Input";
+	preview: string;
 	dataDisposable?: { dispose: () => void };
 };
 

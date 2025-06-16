@@ -80,6 +80,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -99,6 +101,8 @@ describe("useSessionManager", () => {
 					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -108,6 +112,8 @@ describe("useSessionManager", () => {
 					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -130,12 +136,16 @@ describe("useSessionManager", () => {
 					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -158,6 +168,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -180,6 +192,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -242,6 +256,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -265,6 +281,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -294,6 +312,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [Buffer.from("Existing output\n")],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -320,6 +340,8 @@ describe("useSessionManager", () => {
 					process: mockProcess as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -348,12 +370,16 @@ describe("useSessionManager", () => {
 					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 
@@ -397,12 +423,16 @@ describe("useSessionManager", () => {
 					process: mockProcess1 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 				result.current.addSession({
 					id: "session-2",
 					process: mockProcess2 as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				});
 			});
 

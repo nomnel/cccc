@@ -38,18 +38,22 @@ describe("Menu", () => {
 	it("Menuコンポーネントが正しいpropsを受け取る", async () => {
 		const { Menu } = await import("./Menu.js");
 		const mockOnSelect = vi.fn();
-		const sessions = [
+		const sessions: Session[] = [
 			{
 				id: "session-1",
 				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
+				status: "Idle",
+				preview: "",
 			},
 			{
 				id: "session-2",
 				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
+				status: "Idle",
+				preview: "",
 			},
 		];
 
@@ -109,18 +113,22 @@ describe("Menu", () => {
 
 		it("セッションありの場合、START、セッション、EXIT の順で表示される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [
+			const sessions: Session[] = [
 				{
 					id: "session-1",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 				{
 					id: "session-2",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 			];
 
@@ -166,18 +174,22 @@ describe("Menu", () => {
 
 		it("複数セッションがある場合も最初のオプションが選択状態", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [
+			const sessions: Session[] = [
 				{
 					id: "session-1",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 				{
 					id: "session-2",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 			];
 
@@ -214,12 +226,14 @@ describe("Menu", () => {
 
 		it("上矢印キーで選択インデックスが正しく変更される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [
+			const sessions: Session[] = [
 				{
 					id: "session-1",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 			];
 
@@ -314,18 +328,22 @@ describe("Menu", () => {
 
 		it("セッションがある場合はSTART、セッション、EXITの順", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [
+			const sessions: Session[] = [
 				{
 					id: "session-1",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 				{
 					id: "session-2",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 			];
 
@@ -346,11 +364,13 @@ describe("Menu", () => {
 
 		it("大量のセッションがある場合も正しく処理される", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = Array.from({ length: 10 }, (_, i) => ({
+			const sessions: Session[] = Array.from({ length: 10 }, (_, i) => ({
 				id: `session-${i + 1}`,
 				process: {} as IPty,
 				outputs: [],
 				lastUpdated: new Date(),
+				status: "Idle",
+				preview: "",
 			}));
 
 			const expectedLength = 1 + sessions.length + 1; // START + セッション数 + EXIT
@@ -386,12 +406,14 @@ describe("Menu", () => {
 
 		it("sessionsが配列であることを確認", () => {
 			const mockOnSelect = vi.fn();
-			const sessions = [
+			const sessions: Session[] = [
 				{
 					id: "session-1",
 					process: {} as IPty,
 					outputs: [],
 					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
 				},
 			];
 
