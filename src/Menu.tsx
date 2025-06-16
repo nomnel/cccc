@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Box, Text, useInput } from "ink";
+import stripAnsi from "strip-ansi";
 import { MENU_OPTIONS } from "./constants.js";
 import type { Session } from "./types.js";
 
@@ -26,7 +27,10 @@ const FILTER_PATTERNS = [
 	"? for shortcuts",
 	"auto-accept edits on",
 	"plan mode on",
-];
+].map((pattern) => pattern.toLowerCase());
+
+const RUNNING_PATTERNS = ["esc to interrupt"];
+const AWAITING_INPUT_PATTERNS = ["│ do you want", "│ would you like"];
 
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -46,86 +50,34 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return "just now";
 	};
 
-	// Strip ANSI escape sequences from text
-	const stripAnsi = (text: string): string => {
-		// Remove ANSI escape sequences
-		// Matches:
-		// - CSI sequences: ESC [ ... m
-		// - OSC sequences: ESC ] ... ST/BEL
-		// - Other escape sequences
-		return text.replace(
-			// biome-ignore lint/suspicious/noControlCharactersInRegex: This regex is specifically designed to match and remove ANSI escape sequences
-			/[\x1b\x9b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-			"",
-		);
-	};
-
 	// Get session status based on recent output
 	const getSessionStatus = (session: Session): string => {
 		if (session.outputs.length === 0) return "Idle";
 
 		// Get last 100 lines of output
-		const fullOutput = Buffer.concat(session.outputs.slice(-100)).toString();
-		const lines = fullOutput.split("\n");
-		const recentLines = lines.slice(-100).join("\n");
-		const cleanOutput = stripAnsi(recentLines);
+		const recentOutput = Buffer.concat(session.outputs.slice(-100)).toString();
+		const cleanOutput = stripAnsi(recentOutput);
 
-		// Check for common patterns that indicate a running process
-		// Look for spinner patterns, progress indicators, or common running messages
-		const runningPatterns = [
-			"esc to interrupt",
-			"ctrl+c to stop",
-			"press any key to stop",
-			"running",
-			"processing",
-			"⠋",
-			"⠙",
-			"⠹",
-			"⠸",
-			"⠼",
-			"⠴",
-			"⠦",
-			"⠧",
-			"⠇",
-			"⠏", // spinner characters
-			"█",
-			"▓",
-			"▒",
-			"░", // progress bar characters
-		];
-
-		for (const pattern of runningPatterns) {
-			if (cleanOutput.toLowerCase().includes(pattern.toLowerCase())) {
-				return "Running";
-			}
-		}
-
-		// Check for input prompts
-		const inputPatterns = [
-			"Do you want",
-			"Would you like",
-			"Enter",
-			"Please choose",
-			"Select",
-			"Continue?",
-			"(y/n)",
-			"(yes/no)",
-			"?",
-		];
-
-		for (const pattern of inputPatterns) {
-			if (cleanOutput.includes(pattern)) {
-				return "Awaiting Input";
-			}
-		}
+		const lines = cleanOutput.split("\n");
 
 		// Check if the last line ends with a colon or question mark (common prompt indicators)
-		const lastLine = lines[lines.length - 1];
-		if (
-			lastLine &&
-			(lastLine.trim().endsWith(":") || lastLine.trim().endsWith("?"))
-		) {
+		const lastLine = lines[lines.length - 1]?.trim();
+		if (lastLine && (lastLine.endsWith(":") || lastLine.endsWith("?"))) {
 			return "Awaiting Input";
+		}
+
+		for (const line of lines.reverse()) {
+			const normalized = line.trim().toLowerCase();
+
+			if (RUNNING_PATTERNS.some((pattern) => normalized.includes(pattern))) {
+				return "Running";
+			}
+
+			if (
+				AWAITING_INPUT_PATTERNS.some((pattern) => normalized.includes(pattern))
+			) {
+				return "Awaiting Input";
+			}
 		}
 
 		return "Idle";
@@ -135,43 +87,27 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const getSessionPreview = (session: Session): string => {
 		if (session.outputs.length === 0) return "";
 
-		// Concatenate all outputs
-		const fullOutput = Buffer.concat(session.outputs).toString();
-
-		// Strip ANSI escape sequences
-		const cleanOutput = stripAnsi(fullOutput);
-
-		// Split into lines to filter out input prompts and hints
-		const lines = cleanOutput.split("\n");
+		const recentOutput = Buffer.concat(session.outputs.slice(-10)).toString();
+		const cleanOutput = stripAnsi(recentOutput);
 
 		// Filter out lines that contain input prompts, hints, or common interactive elements
-		const filteredLines = lines.filter((line) => {
+		const lines = cleanOutput.split("\n").filter((line) => {
 			const trimmedLine = line.trim();
-			// Skip empty lines
 			if (!trimmedLine) return false;
 
 			const lowerLine = trimmedLine.toLowerCase();
-
-			// Filter out patterns
-			if (
-				FILTER_PATTERNS.some((pattern) =>
-					lowerLine.includes(pattern.toLowerCase()),
-				)
-			) {
-				return false;
-			}
-
-			return true;
+			// FILTER_PATTERNS has already been converted to lowercase
+			return FILTER_PATTERNS.every((pattern) => !lowerLine.includes(pattern));
 		});
 
 		// Join filtered lines and normalize whitespace
-		const filteredOutput = filteredLines.join(" ").replace(/\s+/g, " ").trim();
+		const preview = lines.join(" ").replace(/\s+/g, " ").trim();
 
 		// Get last characters based on the defined limit
-		if (filteredOutput.length <= SESSION_PREVIEW_LENGTH) {
-			return filteredOutput;
+		if (preview.length <= SESSION_PREVIEW_LENGTH) {
+			return preview;
 		}
-		return `…${filteredOutput.slice(-SESSION_PREVIEW_LENGTH)}`;
+		return `…${preview.slice(-SESSION_PREVIEW_LENGTH)}`;
 	};
 
 	// Build options array: start, sessions, exit
