@@ -9,7 +9,24 @@ interface MenuProps {
 }
 
 // Session preview character limit
-const SESSION_PREVIEW_LENGTH = 50;
+const SESSION_PREVIEW_LENGTH = 200;
+
+const FILTER_PATTERNS = [
+	// UI elements
+	"│ ",
+	" │",
+	"╭",
+	"╮",
+	"╰",
+	"╯",
+	// Hint patterns
+	"use /ide to connect to your ide",
+	"esc to interrupt",
+	"※ tip:",
+	"? for shortcuts",
+	"auto-accept edits on",
+	"plan mode on",
+];
 
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -114,7 +131,7 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return "Idle";
 	};
 
-	// Extract last 50 characters from session outputs
+	// Extract last 50 characters from session outputs, filtering out input prompts and hints
 	const getSessionPreview = (session: Session): string => {
 		if (session.outputs.length === 0) return "";
 
@@ -124,14 +141,37 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		// Strip ANSI escape sequences
 		const cleanOutput = stripAnsi(fullOutput);
 
-		// Replace consecutive whitespace characters with single space
-		const normalizedOutput = cleanOutput.replace(/\s+/g, " ");
+		// Split into lines to filter out input prompts and hints
+		const lines = cleanOutput.split("\n");
+
+		// Filter out lines that contain input prompts, hints, or common interactive elements
+		const filteredLines = lines.filter((line) => {
+			const trimmedLine = line.trim();
+			// Skip empty lines
+			if (!trimmedLine) return false;
+
+			const lowerLine = trimmedLine.toLowerCase();
+
+			// Filter out patterns
+			if (
+				FILTER_PATTERNS.some((pattern) =>
+					lowerLine.includes(pattern.toLowerCase()),
+				)
+			) {
+				return false;
+			}
+
+			return true;
+		});
+
+		// Join filtered lines and normalize whitespace
+		const filteredOutput = filteredLines.join(" ").replace(/\s+/g, " ").trim();
 
 		// Get last characters based on the defined limit
-		if (normalizedOutput.length <= SESSION_PREVIEW_LENGTH) {
-			return normalizedOutput;
+		if (filteredOutput.length <= SESSION_PREVIEW_LENGTH) {
+			return filteredOutput;
 		}
-		return `…${normalizedOutput.slice(-SESSION_PREVIEW_LENGTH)}`;
+		return `…${filteredOutput.slice(-SESSION_PREVIEW_LENGTH)}`;
 	};
 
 	// Build options array: start, sessions, exit
