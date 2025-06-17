@@ -27,9 +27,13 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return "just now";
 	};
 
-	// Build options array: start, worktree, sessions, exit
+	// Build options array: start, worktree, manage worktrees, sessions, exit
 	const options = React.useMemo(() => {
-		const result: string[] = [MENU_OPTIONS.START, MENU_OPTIONS.WORKTREE];
+		const result: string[] = [
+			MENU_OPTIONS.START,
+			MENU_OPTIONS.WORKTREE,
+			MENU_OPTIONS.MANAGE_WORKTREES,
+		];
 		for (const session of sessions) {
 			result.push(session.id);
 		}
@@ -61,6 +65,7 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 						{option}
 						{option !== MENU_OPTIONS.START &&
 							option !== MENU_OPTIONS.WORKTREE &&
+							option !== MENU_OPTIONS.MANAGE_WORKTREES &&
 							option !== MENU_OPTIONS.EXIT &&
 							(() => {
 								const session = sessions.find((s) => s.id === option);

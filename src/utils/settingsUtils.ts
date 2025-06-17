@@ -19,7 +19,10 @@ export interface SettingsFile {
 /**
  * Find all settings.*.json files in a directory
  */
-const findSettingsInDirectory = (dir: string, source: "home" | "local"): SettingsFile[] => {
+const findSettingsInDirectory = (
+	dir: string,
+	source: "home" | "local",
+): SettingsFile[] => {
 	const settingsFiles: SettingsFile[] = [];
 
 	if (!existsSync(dir)) {
@@ -32,7 +35,7 @@ const findSettingsInDirectory = (dir: string, source: "home" | "local"): Setting
 		for (const entry of entries) {
 			// Match settings.*.json pattern
 			const match = entry.match(/^settings\.(.+)\.json$/);
-			if (match && match[1]) {
+			if (match?.[1]) {
 				const fullPath = path.join(dir, entry);
 				if (statSync(fullPath).isFile()) {
 					settingsFiles.push({
@@ -54,14 +57,17 @@ const findSettingsInDirectory = (dir: string, source: "home" | "local"): Setting
 /**
  * Find all settings.*.json files in ~/.claude/ and ./.claude/ directories
  */
-export const findSettingsFiles = (homeDir?: string, currentDir?: string): SettingsFile[] => {
+export const findSettingsFiles = (
+	homeDir?: string,
+	currentDir?: string,
+): SettingsFile[] => {
 	const settingsFiles: SettingsFile[] = [];
-	
+
 	// Search in ~/.claude/
 	const home = homeDir || homedir();
 	const homeClaudeDir = path.join(home, ".claude");
 	settingsFiles.push(...findSettingsInDirectory(homeClaudeDir, "home"));
-	
+
 	// Search in ./.claude/ (current directory)
 	const cwd = currentDir || process.cwd();
 	const localClaudeDir = path.join(cwd, ".claude");
@@ -69,7 +75,7 @@ export const findSettingsFiles = (homeDir?: string, currentDir?: string): Settin
 	if (localClaudeDir !== homeClaudeDir) {
 		settingsFiles.push(...findSettingsInDirectory(localClaudeDir, "local"));
 	}
-	
+
 	return settingsFiles;
 };
 

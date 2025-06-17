@@ -1,83 +1,70 @@
-import { execSync } from "node:child_process";
+import { exec, execSync } from "node:child_process";
+import { promisify } from "node:util";
 import path from "node:path";
 
-export interface GitWorktree {
+const execAsync = promisify(exec);
+
+export interface Worktree {
 	path: string;
 	branch: string;
-	commit: string;
-	bare?: boolean;
+	isCurrentWorktree: boolean;
+	isBare: boolean;
+	isMainWorktree: boolean;
 }
 
-/**
- * Check if the current directory is a git repository
- */
-export const isGitRepo = (cwd: string = process.cwd()): boolean => {
-	try {
-		execSync("git rev-parse --is-inside-work-tree", {
-			cwd,
-			stdio: "ignore",
-		});
-		return true;
-	} catch {
-		return false;
-	}
-};
+export interface WorktreeStatus {
+	hasUncommittedChanges: boolean;
+	hasUntrackedFiles: boolean;
+}
 
-/**
- * Get the root directory of the git repository
- */
-export const getGitRoot = (cwd: string = process.cwd()): string | null => {
+export async function getWorktreesAsync(): Promise<Worktree[]> {
 	try {
-		const result = execSync("git rev-parse --show-toplevel", {
-			cwd,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		});
-		return result.trim();
-	} catch {
-		return null;
-	}
-};
+		const { stdout } = await execAsync("git worktree list --porcelain");
+		const worktrees: Worktree[] = [];
+		const lines = stdout.trim().split("\n");
 
-/**
- * Get all git worktrees
- */
-export const getWorktrees = (cwd: string = process.cwd()): GitWorktree[] => {
-	try {
-		const result = execSync("git worktree list --porcelain", {
-			cwd,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		});
-
-		const worktrees: GitWorktree[] = [];
-		const lines = result.trim().split("\n");
-		let currentWorktree: Partial<GitWorktree> = {};
+		let currentWorktree: Partial<Worktree> = {};
 
 		for (const line of lines) {
 			if (line.startsWith("worktree ")) {
-				// If we have a previous worktree, save it
 				if (currentWorktree.path) {
-					worktrees.push(currentWorktree as GitWorktree);
+					worktrees.push(currentWorktree as Worktree);
 				}
-				// Start new worktree
 				currentWorktree = {
-					path: line.substring("worktree ".length),
+					path: line.substring(9),
+					isCurrentWorktree: false,
+					isBare: false,
+					isMainWorktree: false,
 				};
-			} else if (line.startsWith("HEAD ")) {
-				currentWorktree.commit = line.substring("HEAD ".length);
 			} else if (line.startsWith("branch ")) {
-				currentWorktree.branch = line.substring("branch ".length);
+				currentWorktree.branch = line.substring(7);
 			} else if (line === "bare") {
-				currentWorktree.bare = true;
-			} else if (line.startsWith("detached")) {
-				currentWorktree.branch = `(detached at ${currentWorktree.commit?.substring(0, 7) || "unknown"})`;
+				currentWorktree.isBare = true;
+			} else if (line === "detached") {
+				currentWorktree.branch = "(detached HEAD)";
 			}
 		}
 
-		// Add the last worktree
 		if (currentWorktree.path) {
-			worktrees.push(currentWorktree as GitWorktree);
+			worktrees.push(currentWorktree as Worktree);
+		}
+
+		// Get current worktree
+		const { stdout: currentPath } = await execAsync(
+			"git rev-parse --show-toplevel",
+		);
+		const currentWorktreePath = currentPath.trim();
+
+		// Get main worktree
+		const { stdout: gitDir } = await execAsync(
+			"git rev-parse --git-common-dir",
+		);
+		const mainWorktreePath = gitDir.trim().replace(/\/.git$/, "");
+
+		// Mark current and main worktrees
+		for (const worktree of worktrees) {
+			worktree.isCurrentWorktree = worktree.path === currentWorktreePath;
+			worktree.isMainWorktree = worktree.path === mainWorktreePath;
 		}
 
 		return worktrees;
@@ -86,94 +73,172 @@ export const getWorktrees = (cwd: string = process.cwd()): GitWorktree[] => {
 			`Failed to get worktrees: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
-};
+}
 
-/**
- * Get display name for a worktree
- */
-export const getWorktreeDisplayName = (worktree: GitWorktree): string => {
-	const dirname = path.basename(worktree.path);
-	const branch = worktree.branch || "unknown";
-	return `${dirname} (${branch})`;
-};
-
-/**
- * Get relative path from git root
- */
-export const getRelativePath = (
-	absolutePath: string,
-	gitRoot: string,
-): string => {
-	return path.relative(gitRoot, absolutePath) || ".";
-};
-
-/**
- * Sanitize branch name to be used as a directory name
- */
-export const sanitizeBranchNameForDirectory = (branchName: string): string => {
-	// Replace directory-unsafe characters with hyphens
-	return branchName
-		.replace(/[^\w\-\.]/g, "-") // Replace any non-word chars (except - and .) with -
-		.replace(/\/+/g, "-") // Replace slashes with hyphens
-		.replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-		.replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-};
-
-/**
- * Check if a worktree already exists
- */
-export const worktreeExists = (
+export async function getWorktreeStatus(
 	worktreePath: string,
-	cwd: string = process.cwd(),
-): boolean => {
-	const worktrees = getWorktrees(cwd);
-	return worktrees.some((wt) => wt.path === worktreePath);
-};
-
-/**
- * Create a new git worktree
- */
-export const createWorktree = (
-	branchName: string,
-	cwd: string = process.cwd(),
-): string => {
-	const gitRoot = getGitRoot(cwd);
-	if (!gitRoot) {
-		throw new Error("Not in a git repository");
-	}
-
-	const sanitizedDirName = sanitizeBranchNameForDirectory(branchName);
-	const worktreePath = path.join(gitRoot, ".git", "worktree", sanitizedDirName);
-
-	// Check if worktree already exists
-	if (worktreeExists(worktreePath, cwd)) {
-		throw new Error(`Worktree already exists at: ${worktreePath}`);
-	}
-
+): Promise<WorktreeStatus> {
 	try {
-		// Check if branch already exists
-		try {
-			execSync(`git rev-parse --verify ${branchName}`, {
-				cwd,
-				stdio: "ignore",
-			});
-			// Branch exists, create worktree with existing branch
-			execSync(`git worktree add "${worktreePath}" "${branchName}"`, {
-				cwd,
-				stdio: ["ignore", "pipe", "pipe"],
-			});
-		} catch {
-			// Branch doesn't exist, create new branch with worktree
-			execSync(`git worktree add -b "${branchName}" "${worktreePath}"`, {
-				cwd,
-				stdio: ["ignore", "pipe", "pipe"],
-			});
+		const { stdout } = await execAsync(
+			`git -C "${worktreePath}" status --porcelain`,
+		);
+		const lines = stdout.trim().split("\n").filter(Boolean);
+
+		let hasUncommittedChanges = false;
+		let hasUntrackedFiles = false;
+
+		for (const line of lines) {
+			const status = line.substring(0, 2);
+			if (status === "??") {
+				hasUntrackedFiles = true;
+			} else {
+				hasUncommittedChanges = true;
+			}
 		}
 
-		return worktreePath;
+		return { hasUncommittedChanges, hasUntrackedFiles };
+	} catch (error) {
+		// If we can't get status, return unknown state
+		return { hasUncommittedChanges: false, hasUntrackedFiles: false };
+	}
+}
+
+export async function deleteWorktree(
+	worktreePath: string,
+	force = false,
+): Promise<void> {
+	try {
+		const command = force
+			? `git worktree remove "${worktreePath}" --force`
+			: `git worktree remove "${worktreePath}"`;
+		await execAsync(command);
+	} catch (error) {
+		throw new Error(
+			`Failed to delete worktree: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
+
+export async function deleteAllWorktrees(): Promise<{
+	deleted: string[];
+	errors: string[];
+}> {
+	const results: { deleted: string[]; errors: string[] } = {
+		deleted: [],
+		errors: [],
+	};
+
+	try {
+		const worktrees = await getWorktreesAsync();
+		const worktreesToDelete = worktrees.filter(
+			(w) => !w.isMainWorktree && !w.isCurrentWorktree,
+		);
+
+		for (const worktree of worktreesToDelete) {
+			try {
+				const status = await getWorktreeStatus(worktree.path);
+				await deleteWorktree(worktree.path, status.hasUncommittedChanges);
+				results.deleted.push(worktree.path);
+			} catch (error) {
+				results.errors.push(
+					`${worktree.path}: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			}
+		}
+
+		return results;
+	} catch (error) {
+		throw new Error(
+			`Failed to delete all worktrees: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
+
+// Legacy interface for compatibility with existing code
+export interface GitWorktree {
+	path: string;
+	branch: string;
+}
+
+export function isGitRepo(): boolean {
+	try {
+		execSync("git rev-parse --git-dir", { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export function getGitRoot(): string | null {
+	try {
+		const result = execSync("git rev-parse --show-toplevel", {
+			encoding: "utf8",
+		});
+		return result.trim();
+	} catch {
+		return null;
+	}
+}
+
+export function getWorktreeDisplayName(worktree: GitWorktree): string {
+	if (worktree.branch.startsWith("refs/heads/")) {
+		return worktree.branch.substring(11);
+	}
+	return worktree.branch;
+}
+
+export function createWorktree(branchName: string): string {
+	const worktreePath = path.join("..", branchName);
+
+	try {
+		// Create the worktree with a new branch
+		execSync(`git worktree add -b ${branchName} "${worktreePath}"`, {
+			encoding: "utf8",
+		});
+
+		// Get the absolute path of the created worktree
+		const absolutePath = path.resolve(worktreePath);
+		return absolutePath;
 	} catch (error) {
 		throw new Error(
 			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
 		);
 	}
-};
+}
+
+// Legacy synchronous getWorktrees function for compatibility
+export function getWorktrees(gitRoot: string): GitWorktree[] {
+	try {
+		const output = execSync("git worktree list --porcelain", {
+			encoding: "utf8",
+			cwd: gitRoot,
+		});
+
+		const worktrees: GitWorktree[] = [];
+		const lines = output.trim().split("\n");
+		let currentWorktree: Partial<GitWorktree> = {};
+
+		for (const line of lines) {
+			if (line.startsWith("worktree ")) {
+				if (currentWorktree.path) {
+					worktrees.push(currentWorktree as GitWorktree);
+				}
+				currentWorktree = {
+					path: line.substring(9),
+				};
+			} else if (line.startsWith("branch ")) {
+				currentWorktree.branch = line.substring(7);
+			} else if (line === "detached") {
+				currentWorktree.branch = "(detached HEAD)";
+			}
+		}
+
+		if (currentWorktree.path) {
+			worktrees.push(currentWorktree as GitWorktree);
+		}
+
+		return worktrees;
+	} catch (error) {
+		return [];
+	}
+}

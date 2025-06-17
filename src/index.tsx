@@ -2,6 +2,7 @@ import * as React from "react";
 import { render, useInput, useApp } from "ink";
 import { Menu } from "./components/Menu.js";
 import { WorktreeMenu } from "./components/WorktreeMenu.js";
+import { WorktreeManager } from "./components/WorktreeManager.js";
 import { BranchInput } from "./components/BranchInput.js";
 import { SettingsSelector } from "./components/SettingsSelector.js";
 import { useSessionManager } from "./hooks/useSessionManager.js";
@@ -32,6 +33,7 @@ const App: React.FC = () => {
 		switchToWorktree,
 		switchToBranchInput,
 		switchToSettingsSelect,
+		switchToWorktreeManager,
 		killAllSessions,
 		appendOutput,
 	} = useSessionManager();
@@ -50,9 +52,7 @@ const App: React.FC = () => {
 	const [pendingWorktree, setPendingWorktree] = React.useState<string | null>(
 		null,
 	);
-	const [pendingBranch, setPendingBranch] = React.useState<string | null>(
-		null,
-	);
+	const [pendingBranch, setPendingBranch] = React.useState<string | null>(null);
 	const [settingsFiles, setSettingsFiles] = React.useState<SettingsFile[]>([]);
 
 	// Handle Ctrl+Q to return to menu when in claude screen
@@ -173,6 +173,8 @@ const App: React.FC = () => {
 				switchToBranchInput();
 			} else if (option === MENU_OPTIONS.WORKTREE) {
 				switchToWorktree();
+			} else if (option === MENU_OPTIONS.MANAGE_WORKTREES) {
+				switchToWorktreeManager();
 			} else if (option === MENU_OPTIONS.EXIT) {
 				killAllSessions();
 				exit();
@@ -184,6 +186,7 @@ const App: React.FC = () => {
 		[
 			switchToBranchInput,
 			switchToWorktree,
+			switchToWorktreeManager,
 			killAllSessions,
 			exit,
 			switchToExistingSession,
@@ -293,7 +296,7 @@ const App: React.FC = () => {
 		setPendingWorktree(null);
 		setPendingBranch(null);
 		setSettingsFiles([]);
-		
+
 		// Go back to appropriate screen
 		if (pendingBranch) {
 			switchToBranchInput();
@@ -325,7 +328,10 @@ const App: React.FC = () => {
 		);
 	}
 
-	if (currentScreen === SCREENS.SETTINGS_SELECT && (pendingWorktree || pendingBranch)) {
+	if (
+		currentScreen === SCREENS.SETTINGS_SELECT &&
+		(pendingWorktree || pendingBranch)
+	) {
 		return (
 			<SettingsSelector
 				settingsFiles={settingsFiles}
@@ -334,6 +340,10 @@ const App: React.FC = () => {
 				onBack={handleSettingsBack}
 			/>
 		);
+	}
+
+	if (currentScreen === SCREENS.WORKTREE_MANAGER) {
+		return <WorktreeManager onBack={switchToMenu} />;
 	}
 
 	// Return null when claude is running

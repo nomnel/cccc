@@ -62,6 +62,11 @@ export const useSessionManager = () => {
 		setCurrentSessionId(null);
 	}, []);
 
+	const switchToWorktreeManager = React.useCallback(() => {
+		setCurrentScreen("worktree_manager");
+		setCurrentSessionId(null);
+	}, []);
+
 	const killAllSessions = React.useCallback(() => {
 		for (const session of sessions) {
 			if (session.dataDisposable) {
@@ -106,6 +111,7 @@ export const useSessionManager = () => {
 		switchToWorktree,
 		switchToBranchInput,
 		switchToSettingsSelect,
+		switchToWorktreeManager,
 		killAllSessions,
 		appendOutput,
 	};
