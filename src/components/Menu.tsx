@@ -73,20 +73,17 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 												: "dim";
 									const timestamp = formatTimestamp(session.lastUpdated);
 									const workingDirDisplay = session.workingDirectory
-										? ` [${path.basename(session.workingDirectory)}]`
-										: "";
-									const settingsDisplay = session.settingsName
-										? ` {${session.settingsName}}`
+										? path.basename(session.workingDirectory)
 										: "";
 									return (
 										<>
 											{" "}
-											({timestamp}) [
+											[
 											<Text color={statusColor} key={`status-${session.id}`}>
 												{session.status}
 											</Text>
-											]{workingDirDisplay}
-											{settingsDisplay}
+											] ({timestamp}) {workingDirDisplay}:
+											{session.settingsName || ""}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>
 									);
