@@ -1,7 +1,7 @@
 {
-	"name": "cccc",
-	"version": "1.0.0",
-	"description": "",
+	"name": "@nomnel/cccc",
+	"version": "0.1.0",
+	"description": "Claude Code Control Center - Terminal UI wrapper for Claude CLI",
 	"main": "dist/index.js",
 	"type": "module",
 	"bin": {
@@ -16,11 +16,20 @@
 		"check": "biome check",
 		"test": "vitest --run",
 		"test:watch": "vitest --watch",
-		"test:coverage": "vitest --coverage"
+		"test:coverage": "vitest --coverage",
+		"prepublishOnly": "pnpm run build && pnpm test"
 	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
+	"keywords": ["claude", "cli", "terminal", "ui", "wrapper", "session", "management"],
+	"author": "nomnel",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nomnel/cccc.git"
+	},
+	"homepage": "https://github.com/nomnel/cccc#readme",
+	"bugs": {
+		"url": "https://github.com/nomnel/cccc/issues"
+	},
 	"packageManager": "pnpm@10.11.0",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

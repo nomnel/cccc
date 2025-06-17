@@ -17,8 +17,18 @@ try {
   await access(path.join(distPath, 'index.js'));
 } catch (error) {
   console.log('Building project...');
-  execSync('npm run build', { cwd: projectRoot, stdio: 'inherit' });
+  try {
+    execSync('pnpm run build', { cwd: projectRoot, stdio: 'inherit' });
+  } catch (buildError) {
+    console.error('Failed to build the project:', buildError.message);
+    process.exit(1);
+  }
 }
 
 // Run the compiled application
-await import(path.join(distPath, 'index.js'));
+try {
+  await import(path.join(distPath, 'index.js'));
+} catch (error) {
+  console.error('Failed to run the application:', error.message);
+  process.exit(1);
+}

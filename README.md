@@ -1,6 +1,9 @@
-# Claude CLI Wrapper
+# Claude Code Control Center (cccc)
 
-Node.js製のターミナルUIを使った Claude CLI のラッパーアプリケーション。
+[![npm version](https://badge.fury.io/js/@nomnel%2Fcccc.svg)](https://www.npmjs.com/package/@nomnel/cccc)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Node.js製のターミナルUIを使った Claude CLI のラッパーアプリケーション。複数のClaudeセッションを効率的に管理できます。
 
 ## 機能
 
@@ -8,18 +11,52 @@ Node.js製のターミナルUIを使った Claude CLI のラッパーアプリ�
 - **セッション管理**: 複数のClaudeセッションを同時に管理
 - **セッション切り替え**: 実行中のセッション間で簡単に切り替え
 - **キーボードショートカット**: Ctrl+Q でメニューに戻る
+- **Git Worktree対応**: ブランチごとのセッション管理
+
+## 前提条件
+
+- Node.js 18以上
+- [Claude CLI](https://docs.anthropic.com/claude/docs/claude-cli) がインストールされていること
 
 ## インストール
 
+### グローバルインストール
+
 ```bash
+npm install -g @nomnel/cccc
+```
+
+### npx での実行
+
+```bash
+npx @nomnel/cccc
+```
+
+### 開発環境でのインストール
+
+```bash
+git clone https://github.com/nomnel/cccc.git
+cd cccc
 pnpm install
+pnpm run build
 ```
 
-## 実行
+## 使い方
+
+インストール後、以下のコマンドで起動します：
 
 ```bash
-pnpm dev
+cccc
 ```
+
+メニューが表示されたら、矢印キーで操作し、Enterキーで選択します。
+
+### キーボードショートカット
+
+- `↑` / `↓`: メニュー項目の選択
+- `Enter`: 選択した項目の実行
+- `Ctrl+Q`: 現在のセッションからメニューに戻る
+- `Ctrl+N` / `Ctrl+P`: Vim風のナビゲーション（次/前の項目）
 
 ## テスト
 

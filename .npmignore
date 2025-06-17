@@ -1,0 +1,43 @@
+# Source files
+src/
+*.ts
+*.tsx
+!dist/**/*.d.ts
+
+# Test files
+*.test.ts
+*.test.tsx
+test-setup.ts
+vitest.config.ts
+coverage/
+
+# Development files
+.gitignore
+biome.json
+tsconfig.json
+pnpm-workspace.yaml
+pnpm-lock.yaml
+CLAUDE.md
+
+# Git
+.git/
+.github/
+
+# Editor directories
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temp files
+*.tmp
+*.swp
