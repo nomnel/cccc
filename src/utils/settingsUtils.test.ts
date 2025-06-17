@@ -47,7 +47,10 @@ describe("settingsUtils", () => {
 
 	describe("findSettingsFiles", () => {
 		it("should find all settings.*.json files in ~/.claude/", () => {
-			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
+			const settings = findSettingsFiles(
+				mockHomeDir,
+				path.join(testDir, "different-dir"),
+			);
 			expect(settings).toHaveLength(3);
 
 			const names = settings.map((s) => s.name).sort();
@@ -62,7 +65,10 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include settings.json without a name part", () => {
-			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
+			const settings = findSettingsFiles(
+				mockHomeDir,
+				path.join(testDir, "different-dir"),
+			);
 			const hasDefaultSettings = settings.some(
 				(s) => s.filename === "settings.json",
 			);
@@ -70,20 +76,29 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include non-settings files", () => {
-			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
+			const settings = findSettingsFiles(
+				mockHomeDir,
+				path.join(testDir, "different-dir"),
+			);
 			const hasConfigFile = settings.some((s) => s.filename === "config.json");
 			expect(hasConfigFile).toBe(false);
 		});
 
 		it("should handle missing ~/.claude directory", () => {
 			rmSync(claudeDir, { recursive: true });
-			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
+			const settings = findSettingsFiles(
+				mockHomeDir,
+				path.join(testDir, "different-dir"),
+			);
 			expect(settings).toHaveLength(0);
 		});
 
 		it("should ignore directories", () => {
 			mkdirSync(path.join(claudeDir, "settings.subdir.json"));
-			const settings = findSettingsFiles(mockHomeDir, path.join(testDir, "different-dir"));
+			const settings = findSettingsFiles(
+				mockHomeDir,
+				path.join(testDir, "different-dir"),
+			);
 			expect(settings).toHaveLength(3); // Still only the 3 files
 		});
 
@@ -92,19 +107,19 @@ describe("settingsUtils", () => {
 			const localDir = path.join(testDir, "local-project");
 			const localClaudeDir = path.join(localDir, ".claude");
 			mkdirSync(localClaudeDir, { recursive: true });
-			
+
 			writeFileSync(
 				path.join(localClaudeDir, "settings.local-dev.json"),
 				JSON.stringify({ name: "Local Development" }),
 			);
-			
+
 			const settings = findSettingsFiles(mockHomeDir, localDir);
 			expect(settings).toHaveLength(4); // 3 from home + 1 from local
-			
+
 			// Check that sources are correctly assigned
-			const homeSetting = settings.find(s => s.name === "dev");
-			const localSetting = settings.find(s => s.name === "local-dev");
-			
+			const homeSetting = settings.find((s) => s.name === "dev");
+			const localSetting = settings.find((s) => s.name === "local-dev");
+
 			expect(homeSetting?.source).toBe("home");
 			expect(localSetting?.source).toBe("local");
 		});
