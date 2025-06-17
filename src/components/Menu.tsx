@@ -37,11 +37,11 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return result;
 	}, [sessions]);
 
-	useInput((_input, key) => {
-		if (key.upArrow) {
+	useInput((input, key) => {
+		if (key.upArrow || (key.ctrl && input === "p")) {
 			setSelectedIndex((prev) => (prev > 0 ? prev - 1 : options.length - 1));
 		}
-		if (key.downArrow) {
+		if (key.downArrow || (key.ctrl && input === "n")) {
 			setSelectedIndex((prev) => (prev < options.length - 1 ? prev + 1 : 0));
 		}
 		if (key.return) {
