@@ -325,11 +325,11 @@ const App: React.FC = () => {
 		);
 	}
 
-	if (currentScreen === SCREENS.SETTINGS_SELECT && pendingWorktree) {
+	if (currentScreen === SCREENS.SETTINGS_SELECT && (pendingWorktree || pendingBranch)) {
 		return (
 			<SettingsSelector
 				settingsFiles={settingsFiles}
-				workingDirectory={pendingWorktree}
+				workingDirectory={pendingWorktree || `[new worktree: ${pendingBranch}]`}
 				onSelect={handleSettingsSelect}
 				onBack={handleSettingsBack}
 			/>
