@@ -22,9 +22,11 @@ describe("WorktreeMenu", () => {
 		vi.mocked(gitUtils.isGitRepo).mockReturnValue(true);
 		vi.mocked(gitUtils.getGitRoot).mockReturnValue("/path/to/repo");
 		vi.mocked(gitUtils.getWorktrees).mockReturnValue([]);
-		vi.mocked(gitUtils.getWorktreeDisplayName).mockImplementation((worktree) => {
-			return `${worktree.branch} (${worktree.path})`;
-		});
+		vi.mocked(gitUtils.getWorktreeDisplayName).mockImplementation(
+			(worktree) => {
+				return `${worktree.branch} (${worktree.path})`;
+			},
+		);
 	});
 
 	describe("initial state", () => {
@@ -36,7 +38,7 @@ describe("WorktreeMenu", () => {
 		it("should display error when not in a git repository", async () => {
 			vi.mocked(gitUtils.isGitRepo).mockReturnValue(false);
 			const { lastFrame } = render(<WorktreeMenu {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Not in a git repository");
 				expect(lastFrame()).toContain("Press any key to return to main menu");
@@ -46,7 +48,7 @@ describe("WorktreeMenu", () => {
 		it("should display error when git root cannot be found", async () => {
 			vi.mocked(gitUtils.getGitRoot).mockReturnValue(null);
 			const { lastFrame } = render(<WorktreeMenu {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Could not find git repository root");
 			});
@@ -55,7 +57,7 @@ describe("WorktreeMenu", () => {
 		it("should display error when no worktrees found", async () => {
 			vi.mocked(gitUtils.getWorktrees).mockReturnValue([]);
 			const { lastFrame } = render(<WorktreeMenu {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("No worktrees found");
 			});
@@ -88,7 +90,9 @@ describe("WorktreeMenu", () => {
 			await vi.waitFor(() => {
 				const frame = lastFrame();
 				expect(frame).toContain("Select a Git Worktree:");
-				expect(frame).toContain("Use ↑/↓ to navigate, Enter to select, Esc to go back");
+				expect(frame).toContain(
+					"Use ↑/↓ to navigate, Enter to select, Esc to go back",
+				);
 				expect(frame).toContain("main (/path/to/repo)");
 				expect(frame).toContain("feature-branch (/path/to/repo-feature)");
 				expect(frame).toContain("← Back to main menu");
@@ -112,7 +116,7 @@ describe("WorktreeMenu", () => {
 
 			await vi.waitFor(() => {
 				const lines = lastFrame().split("\n");
-				const selectedLine = lines.find(line => line.includes("▶"));
+				const selectedLine = lines.find((line) => line.includes("▶"));
 				expect(selectedLine).toBeDefined();
 				expect(selectedLine).toContain("main");
 			});

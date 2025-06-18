@@ -34,7 +34,9 @@ describe("SessionSelector", () => {
 		vi.mocked(gitUtils.getWorktrees).mockReturnValue([]);
 		vi.mocked(gitUtils.getBranchesAndTags).mockReturnValue([]);
 		// Mock getWorktreeDisplayName to return the branch name
-		vi.mocked(gitUtils.getWorktreeDisplayName).mockImplementation((worktree) => worktree.branch || "");
+		vi.mocked(gitUtils.getWorktreeDisplayName).mockImplementation(
+			(worktree) => worktree.branch || "",
+		);
 	});
 
 	describe("initial state", () => {
@@ -46,7 +48,7 @@ describe("SessionSelector", () => {
 		it("should display error when not in a git repository", async () => {
 			vi.mocked(gitUtils.isGitRepo).mockReturnValue(false);
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Not in a git repository");
 			});
@@ -55,7 +57,7 @@ describe("SessionSelector", () => {
 		it("should display error when git root cannot be found", async () => {
 			vi.mocked(gitUtils.getGitRoot).mockReturnValue(null);
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Could not find git repository root");
 			});
@@ -101,7 +103,7 @@ describe("SessionSelector", () => {
 
 		it("should handle escape key to go back", async () => {
 			const { stdin } = render(<SessionSelector {...defaultProps} />);
-			
+
 			await vi.waitFor(() => {
 				stdin.write("\x1B"); // Escape key
 				expect(mockOnBack).toHaveBeenCalledTimes(1);
@@ -119,7 +121,9 @@ describe("SessionSelector", () => {
 				},
 			]);
 
-			const { stdin, lastFrame } = render(<SessionSelector {...defaultProps} />);
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
 
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("▶");
@@ -130,7 +134,7 @@ describe("SessionSelector", () => {
 			await vi.waitFor(() => {
 				const frame = lastFrame();
 				const lines = frame.split("\n");
-				const selectedLine = lines.find(line => line.includes("▶"));
+				const selectedLine = lines.find((line) => line.includes("▶"));
 				expect(selectedLine).toContain("Create new branch from...");
 			});
 		});
@@ -138,7 +142,9 @@ describe("SessionSelector", () => {
 
 	describe("branch creation modes", () => {
 		it("should enter create new branch mode", async () => {
-			const { stdin, lastFrame } = render(<SessionSelector {...defaultProps} />);
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
 
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Create new branch...");
@@ -173,7 +179,9 @@ describe("SessionSelector", () => {
 		});
 
 		it("should handle escape in branch creation mode", async () => {
-			const { stdin, lastFrame } = render(<SessionSelector {...defaultProps} />);
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
 
 			await vi.waitFor(() => {
 				expect(lastFrame()).toContain("Create new branch...");
@@ -218,7 +226,7 @@ describe("SessionSelector", () => {
 				expect(frame).toContain("main");
 			});
 
-			// Note: Due to async timing and mocked TextInput, 
+			// Note: Due to async timing and mocked TextInput,
 			// we can't reliably test the actual selection event
 		});
 	});
@@ -272,7 +280,9 @@ describe("SessionSelector", () => {
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("my-project/my-project-feature:feature/new-ui");
+				expect(lastFrame()).toContain(
+					"my-project/my-project-feature:feature/new-ui",
+				);
 			});
 		});
 

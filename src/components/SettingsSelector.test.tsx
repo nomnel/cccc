@@ -50,7 +50,9 @@ describe("SettingsSelector", () => {
 
 			expect(lastFrame()).toContain("Select settings file for worktree:");
 			expect(lastFrame()).toContain("/path/to/worktree");
-			expect(lastFrame()).toContain("Use ↑/↓ to navigate, Enter to select, Esc to go back");
+			expect(lastFrame()).toContain(
+				"Use ↑/↓ to navigate, Enter to select, Esc to go back",
+			);
 		});
 
 		it("should display all settings files", () => {
@@ -78,7 +80,7 @@ describe("SettingsSelector", () => {
 
 			// First option should be selected by default
 			const lines = lastFrame().split("\n");
-			const selectedLine = lines.find(line => line.includes("▶"));
+			const selectedLine = lines.find((line) => line.includes("▶"));
 			expect(selectedLine).toBeDefined();
 			expect(selectedLine).toContain("production");
 		});
@@ -102,7 +104,7 @@ describe("SettingsSelector", () => {
 
 			expect(mockOnSelect).toHaveBeenCalledWith(
 				"/path/to/production.json",
-				"production"
+				"production",
 			);
 		});
 	});
@@ -130,10 +132,13 @@ describe("SettingsSelector", () => {
 			const { lastFrame } = render(<SettingsSelector {...props} />);
 
 			// Should have exactly 2 options
-			const lines = lastFrame().split("\n").filter(line => line.trim());
-			const optionLines = lines.filter(line => 
-				line.includes("Continue without settings") || 
-				line.includes("← Back to worktree selection")
+			const lines = lastFrame()
+				.split("\n")
+				.filter((line) => line.trim());
+			const optionLines = lines.filter(
+				(line) =>
+					line.includes("Continue without settings") ||
+					line.includes("← Back to worktree selection"),
 			);
 			expect(optionLines).toHaveLength(2);
 		});
@@ -145,14 +150,15 @@ describe("SettingsSelector", () => {
 
 			// Should have settings files + 2 extra options
 			const totalOptions = mockSettingsFiles.length + 2; // + "Continue without" + "Back"
-			
+
 			// Count lines with either ▶ or spaces at the beginning (indicating options)
 			const lines = lastFrame().split("\n");
-			const optionLines = lines.filter(line => 
-				line.trimStart().startsWith("▶") || 
-				(line.startsWith("  ") && line.trim().length > 0)
+			const optionLines = lines.filter(
+				(line) =>
+					line.trimStart().startsWith("▶") ||
+					(line.startsWith("  ") && line.trim().length > 0),
 			);
-			
+
 			// Should have correct number of options
 			expect(optionLines.length).toBeGreaterThanOrEqual(totalOptions);
 		});
@@ -163,9 +169,9 @@ describe("SettingsSelector", () => {
 			const { lastFrame } = render(<SettingsSelector {...defaultProps} />);
 
 			// Verify that getSettingsDisplayName is used
-			mockSettingsFiles.forEach(settings => {
+			for (const settings of mockSettingsFiles) {
 				expect(lastFrame()).toContain(`${settings.name} (${settings.path})`);
-			});
+			}
 		});
 	});
 });

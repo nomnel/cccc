@@ -59,9 +59,9 @@ describe("BranchInput", () => {
 				"end-with-dot.",
 			];
 
-			validNames.forEach((name) => {
+			for (const name of validNames) {
 				expect(invalidCharsRegex.test(name)).toBe(false);
-			});
+			}
 
 			// Invalid branch names
 			const invalidNames = [
@@ -87,9 +87,9 @@ describe("BranchInput", () => {
 				"feature?branch",
 			];
 
-			invalidNames.forEach((name) => {
+			for (const name of invalidNames) {
 				expect(invalidCharsRegex.test(name)).toBe(true);
-			});
+			}
 		});
 
 		it("should handle empty and whitespace-only strings", () => {

@@ -38,9 +38,7 @@ describe("sessionUtils", () => {
 		});
 
 		it("should handle ANSI escape sequences", () => {
-			const outputs = [
-				Buffer.from("\x1b[31mESC to interrupt\x1b[0m"),
-			];
+			const outputs = [Buffer.from("\x1b[31mESC to interrupt\x1b[0m")];
 			expect(getSessionStatus(outputs)).toBe("Running");
 		});
 
@@ -77,7 +75,7 @@ describe("sessionUtils", () => {
 		});
 
 		it("should handle whitespace-only last line", () => {
-			const outputs = [Buffer.from("Some text\n   \n")]
+			const outputs = [Buffer.from("Some text\n   \n")];
 			expect(getSessionStatus(outputs)).toBe("Idle");
 		});
 	});
@@ -99,14 +97,18 @@ describe("sessionUtils", () => {
 
 		it("should filter out hint patterns", () => {
 			const outputs = [
-				Buffer.from("Use /ide to connect to your IDE\n※ Tip: something\nReal content"),
+				Buffer.from(
+					"Use /ide to connect to your IDE\n※ Tip: something\nReal content",
+				),
 			];
 			expect(getSessionPreview(outputs)).toBe("Real content");
 		});
 
 		it("should filter out multiple patterns case-insensitively", () => {
 			const outputs = [
-				Buffer.from("? for shortcuts\nAuto-accept edits ON\nPlan mode ON\nImportant message"),
+				Buffer.from(
+					"? for shortcuts\nAuto-accept edits ON\nPlan mode ON\nImportant message",
+				),
 			];
 			expect(getSessionPreview(outputs)).toBe("Important message");
 		});
@@ -131,9 +133,7 @@ describe("sessionUtils", () => {
 		});
 
 		it("should handle ANSI escape sequences", () => {
-			const outputs = [
-				Buffer.from("\x1b[31mColored text\x1b[0m"),
-			];
+			const outputs = [Buffer.from("\x1b[31mColored text\x1b[0m")];
 			expect(getSessionPreview(outputs)).toBe("Colored text");
 		});
 
@@ -155,14 +155,20 @@ describe("sessionUtils", () => {
 
 		it("should handle mixed content correctly", () => {
 			const outputs = [
-				Buffer.from("│ UI element\nReal content\nuse /ide to connect to your ide\nMore real content"),
+				Buffer.from(
+					"│ UI element\nReal content\nuse /ide to connect to your ide\nMore real content",
+				),
 			];
 			expect(getSessionPreview(outputs)).toBe("Real content More real content");
 		});
 
 		it("should preserve content that contains filter patterns as substrings", () => {
-			const outputs = [Buffer.from("This is about tips and shortcuts but not a tip itself")];
-			expect(getSessionPreview(outputs)).toBe("This is about tips and shortcuts but not a tip itself");
+			const outputs = [
+				Buffer.from("This is about tips and shortcuts but not a tip itself"),
+			];
+			expect(getSessionPreview(outputs)).toBe(
+				"This is about tips and shortcuts but not a tip itself",
+			);
 		});
 	});
 });
