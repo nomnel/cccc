@@ -7,6 +7,7 @@ import {
 	getBranchesAndTags,
 	getGitRoot,
 	getWorktreeDisplayName,
+	getWorktreeRelativePath,
 	getWorktrees,
 	isGitRepo,
 } from "../utils/gitUtils.js";
@@ -314,8 +315,9 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 				}
 
 				if (option.type === "worktree") {
-					const displayName = getWorktreeDisplayName(option.worktree);
-					const isFirstWorktree = index === 1; // After create-new
+					const isFirstWorktree = index === 2; // After create-new and create-new-from
+					const relativePath = getWorktreeRelativePath(option.worktree.path);
+					const branchName = getWorktreeDisplayName(option.worktree);
 
 					return (
 						<Box key={option.worktree.path} flexDirection="column">
@@ -323,19 +325,15 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 								<Box>
 									<Text> </Text>
 									<Text color="gray" dimColor>
-										branches
+										worktrees
 									</Text>
 								</Box>
 							)}
 							<Box>
 								<Text color={isSelected ? "green" : undefined}>
 									{isSelected ? "▶ " : "  "}
-									<Text color="gray">⎇</Text> {displayName}{" "}
-									<Text color="dim">{option.worktree.branch}</Text>
+									<Text color="gray">📁</Text> {relativePath} <Text color="dim">({branchName})</Text>
 								</Text>
-								{isSelected && (
-									<Text color="dim"> → {option.worktree.path}</Text>
-								)}
 							</Box>
 						</Box>
 					);
