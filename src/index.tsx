@@ -13,7 +13,13 @@ import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
-import { createWorktree, createWorktreeFromRef, isGitRepo } from "./utils/gitUtils.js";
+import {
+	createWorktree,
+	createWorktreeFromRef,
+	getCurrentBranch,
+	getRepositoryName,
+	isGitRepo,
+} from "./utils/gitUtils.js";
 import {
 	type SettingsFile,
 	copySettingsToWorktree,
@@ -55,7 +61,9 @@ const App: React.FC = () => {
 		null,
 	);
 	const [pendingBranch, setPendingBranch] = React.useState<string | null>(null);
-	const [pendingBaseBranch, setPendingBaseBranch] = React.useState<string | null>(null);
+	const [pendingBaseBranch, setPendingBaseBranch] = React.useState<
+		string | null
+	>(null);
 	const [settingsFiles, setSettingsFiles] = React.useState<SettingsFile[]>([]);
 
 	// Handle Ctrl+Q to return to menu when in claude screen
@@ -111,6 +119,11 @@ const App: React.FC = () => {
 			// Set up active session listeners
 			const listeners = setupActiveSessionListeners(ptyProcess);
 			setListeners(listeners);
+
+			// Get the current branch and repository name for this session
+			const branch = getCurrentBranch(workingDirectory);
+			const repoName = getRepositoryName(workingDirectory);
+
 			const newSession: Session = {
 				id: sessionId,
 				process: ptyProcess,
@@ -119,6 +132,8 @@ const App: React.FC = () => {
 				status: "Idle",
 				preview: "",
 				workingDirectory,
+				branch: branch || undefined,
+				repoName: repoName || undefined,
 				settingsPath,
 				settingsName,
 				dataDisposable,
@@ -293,7 +308,10 @@ const App: React.FC = () => {
 			// If we have a pending branch, create the worktree now
 			if (pendingBranch && pendingBaseBranch) {
 				try {
-					worktreePath = createWorktreeFromRef(pendingBranch, pendingBaseBranch);
+					worktreePath = createWorktreeFromRef(
+						pendingBranch,
+						pendingBaseBranch,
+					);
 				} catch (error) {
 					console.error("Failed to create worktree:", error);
 					switchToMenu();
@@ -332,7 +350,13 @@ const App: React.FC = () => {
 				setSettingsFiles([]);
 			}
 		},
-		[pendingWorktree, pendingBranch, pendingBaseBranch, launchNewSession, switchToMenu],
+		[
+			pendingWorktree,
+			pendingBranch,
+			pendingBaseBranch,
+			launchNewSession,
+			switchToMenu,
+		],
 	);
 
 	const handleSettingsBack = React.useCallback(() => {

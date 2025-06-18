@@ -25,7 +25,11 @@ type MenuOption =
 	| { type: "worktree"; worktree: GitWorktree }
 	| { type: "back" };
 
-type BranchSelectionMode = "none" | "create-new" | "select-base" | "create-new-from";
+type BranchSelectionMode =
+	| "none"
+	| "create-new"
+	| "select-base"
+	| "create-new-from";
 
 export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	onSelectNewBranch,
@@ -38,10 +42,13 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	const [branchesAndTags, setBranchesAndTags] = React.useState<GitRef[]>([]);
 	const [error, setError] = React.useState<string | null>(null);
 	const [loading, setLoading] = React.useState(true);
-	const [branchMode, setBranchMode] = React.useState<BranchSelectionMode>("none");
+	const [branchMode, setBranchMode] =
+		React.useState<BranchSelectionMode>("none");
 	const [branchName, setBranchName] = React.useState("");
 	const [selectedBaseIndex, setSelectedBaseIndex] = React.useState(0);
-	const [selectedBaseBranch, setSelectedBaseBranch] = React.useState<string | null>(null);
+	const [selectedBaseBranch, setSelectedBaseBranch] = React.useState<
+		string | null
+	>(null);
 	const [branchError, setBranchError] = React.useState<string | null>(null);
 
 	// Load worktrees on mount
@@ -67,7 +74,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 				// Get all worktrees
 				const foundWorktrees = getWorktrees(gitRoot);
 				setWorktrees(foundWorktrees);
-				
+
 				// Get branches and tags
 				const refs = getBranchesAndTags();
 				setBranchesAndTags(refs);
@@ -133,7 +140,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			}
 			return;
 		}
-		
+
 		if (branchMode === "create-new-from") {
 			if (key.escape) {
 				setBranchMode("select-base");
@@ -142,13 +149,17 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			}
 			return;
 		}
-		
+
 		if (branchMode === "select-base") {
 			if (key.upArrow || (key.ctrl && input === "p")) {
-				setSelectedBaseIndex((prev) => (prev > 0 ? prev - 1 : branchesAndTags.length - 1));
+				setSelectedBaseIndex((prev) =>
+					prev > 0 ? prev - 1 : branchesAndTags.length - 1,
+				);
 			}
 			if (key.downArrow || (key.ctrl && input === "n")) {
-				setSelectedBaseIndex((prev) => (prev < branchesAndTags.length - 1 ? prev + 1 : 0));
+				setSelectedBaseIndex((prev) =>
+					prev < branchesAndTags.length - 1 ? prev + 1 : 0,
+				);
 			}
 			if (key.return && branchesAndTags[selectedBaseIndex]) {
 				const baseBranch = branchesAndTags[selectedBaseIndex].name;
@@ -232,7 +243,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			</Box>
 		);
 	}
-	
+
 	if (branchMode === "select-base") {
 		return (
 			<Box flexDirection="column">
@@ -246,18 +257,21 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						<Box key={`${ref.type}-${ref.name}`}>
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
-								<Text color="gray">{ref.type === "branch" ? "⎇" : "◉"}</Text> {ref.name}
+								<Text color="gray">{ref.type === "branch" ? "⎇" : "◉"}</Text>{" "}
+								{ref.name}
 							</Text>
 						</Box>
 					);
 				})}
 				<Box marginTop={1}>
-					<Text dimColor>Press Enter to continue • Press Escape to go back</Text>
+					<Text dimColor>
+						Press Enter to continue • Press Escape to go back
+					</Text>
 				</Box>
 			</Box>
 		);
 	}
-	
+
 	if (branchMode === "create-new-from") {
 		return (
 			<Box flexDirection="column">
@@ -302,7 +316,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						</Box>
 					);
 				}
-				
+
 				if (option.type === "create-new-from") {
 					return (
 						<Box key="create-new-from">
@@ -332,7 +346,8 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 							<Box>
 								<Text color={isSelected ? "green" : undefined}>
 									{isSelected ? "▶ " : "  "}
-									<Text color="gray">📁</Text> {relativePath} <Text color="dim">({branchName})</Text>
+									<Text color="gray">📁</Text> {relativePath}{" "}
+									<Text color="dim">({branchName})</Text>
 								</Text>
 							</Box>
 						</Box>

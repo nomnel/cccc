@@ -92,6 +92,10 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 									const workingDirDisplay = session.workingDirectory
 										? path.basename(session.workingDirectory)
 										: "";
+									const repoDisplay = session.repoName || workingDirDisplay;
+									const branchDisplay = session.branch
+										? `${repoDisplay}/${session.branch}`
+										: repoDisplay;
 									return (
 										<>
 											{" "}
@@ -99,7 +103,7 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 											<Text color={statusColor} key={`status-${session.id}`}>
 												{session.status}
 											</Text>
-											] ({timestamp}) {workingDirDisplay}:
+											] ({timestamp}) {branchDisplay}:
 											{session.settingsName || ""}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>

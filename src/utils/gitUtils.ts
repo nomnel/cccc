@@ -193,18 +193,18 @@ export function getWorktreeRelativePath(worktreePath: string): string {
 		if (!gitRoot) {
 			return worktreePath;
 		}
-		
+
 		// Get the parent directory of git root
 		const gitRootParent = path.dirname(gitRoot);
 		const gitRootName = path.basename(gitRoot);
-		
+
 		// If the worktree path starts with the git root parent, make it relative
 		if (worktreePath.startsWith(gitRootParent)) {
 			// Get relative path from parent directory
 			const relativeFromParent = path.relative(gitRootParent, worktreePath);
 			return relativeFromParent;
 		}
-		
+
 		// Otherwise return the original path
 		return worktreePath;
 	} catch {
@@ -282,11 +282,14 @@ export interface GitRef {
 export function getBranchesAndTags(): GitRef[] {
 	try {
 		const refs: GitRef[] = [];
-		
+
 		// Get all branches
-		const branchesOutput = execSync("git branch -a --format='%(refname:short)'", {
-			encoding: "utf8",
-		});
+		const branchesOutput = execSync(
+			"git branch -a --format='%(refname:short)'",
+			{
+				encoding: "utf8",
+			},
+		);
 		const branches = branchesOutput.trim().split("\n").filter(Boolean);
 		for (const branch of branches) {
 			// Skip remote tracking branches
@@ -294,7 +297,7 @@ export function getBranchesAndTags(): GitRef[] {
 				refs.push({ name: branch, type: "branch" });
 			}
 		}
-		
+
 		// Get all tags
 		const tagsOutput = execSync("git tag -l", {
 			encoding: "utf8",
@@ -303,14 +306,17 @@ export function getBranchesAndTags(): GitRef[] {
 		for (const tag of tags) {
 			refs.push({ name: tag, type: "tag" });
 		}
-		
+
 		return refs;
 	} catch (error) {
 		return [];
 	}
 }
 
-export function createWorktreeFromRef(branchName: string, baseBranch: string): string {
+export function createWorktreeFromRef(
+	branchName: string,
+	baseBranch: string,
+): string {
 	// Get the git directory
 	const gitDir = execSync("git rev-parse --git-dir", {
 		encoding: "utf8",
@@ -321,9 +327,12 @@ export function createWorktreeFromRef(branchName: string, baseBranch: string): s
 
 	try {
 		// Create the worktree with a new branch based on the specified ref
-		execSync(`git worktree add -b ${branchName} "${worktreePath}" ${baseBranch}`, {
-			encoding: "utf8",
-		});
+		execSync(
+			`git worktree add -b ${branchName} "${worktreePath}" ${baseBranch}`,
+			{
+				encoding: "utf8",
+			},
+		);
 
 		// Get the absolute path of the created worktree
 		const absolutePath = path.resolve(worktreePath);
@@ -332,5 +341,83 @@ export function createWorktreeFromRef(branchName: string, baseBranch: string): s
 		throw new Error(
 			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
 		);
+	}
+}
+
+export function getCurrentBranch(workingDirectory?: string): string | null {
+	try {
+		const options = workingDirectory
+			? { encoding: "utf8" as const, cwd: workingDirectory }
+			: { encoding: "utf8" as const };
+		const branch = execSync("git rev-parse --abbrev-ref HEAD", options).trim();
+		return branch === "HEAD" ? "(detached HEAD)" : branch;
+	} catch {
+		return null;
+	}
+}
+
+export function getRepositoryName(workingDirectory?: string): string | null {
+	try {
+		const options = workingDirectory
+			? { encoding: "utf8" as const, cwd: workingDirectory }
+			: { encoding: "utf8" as const };
+
+		// Try to get the remote origin URL
+		const remoteUrl = execSync(
+			"git config --get remote.origin.url",
+			options,
+		).trim();
+
+		if (!remoteUrl) {
+			// If no remote, try to get the repository name from the directory
+			const gitRoot = workingDirectory || getGitRoot();
+			return gitRoot ? path.basename(gitRoot) : null;
+		}
+
+		// Extract repository name from URL
+		// Handle SSH format: git@github.com:user/repo.git
+		// Handle HTTPS format: https://github.com/user/repo.git
+		// Handle other formats: https://gitlab.com/user/repo, etc.
+
+		let repoName: string;
+
+		if (remoteUrl.startsWith("git@")) {
+			// SSH format
+			const parts = remoteUrl.split(":");
+			if (parts.length === 2 && parts[1]) {
+				repoName = parts[1];
+			} else {
+				return null;
+			}
+		} else if (
+			remoteUrl.startsWith("http://") ||
+			remoteUrl.startsWith("https://")
+		) {
+			// HTTPS format
+			const urlParts = remoteUrl.split("/");
+			repoName = urlParts.slice(-2).join("/");
+		} else {
+			// Unknown format, try to extract the last part
+			const lastPart = remoteUrl.split("/").pop();
+			if (!lastPart) {
+				return null;
+			}
+			repoName = lastPart;
+		}
+
+		// Remove .git extension if present
+		if (repoName.endsWith(".git")) {
+			repoName = repoName.slice(0, -4);
+		}
+
+		// For paths like "user/repo", return just the repo name
+		// For paths like "repo", return as is
+		const parts = repoName.split("/");
+		const finalName = parts[parts.length - 1];
+		return finalName || null;
+	} catch {
+		// If git commands fail, return null
+		// We don't want to fallback to directory name if it's not a git repo
+		return null;
 	}
 }

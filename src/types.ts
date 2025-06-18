@@ -17,6 +17,8 @@ export type Session = {
 	status: "Idle" | "Running" | "Awaiting Input";
 	preview: string;
 	workingDirectory?: string;
+	branch?: string; // The git branch name for this session
+	repoName?: string; // The repository name for this session
 	settingsPath?: string;
 	settingsName?: string; // Name of the settings file used (e.g., "foo" from "settings.foo.json")
 	dataDisposable?: { dispose: () => void };
