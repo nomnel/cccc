@@ -187,31 +187,6 @@ export function getWorktreeDisplayName(worktree: GitWorktree): string {
 	return worktree.branch;
 }
 
-export function getWorktreeRelativePath(worktreePath: string): string {
-	try {
-		const gitRoot = getGitRoot();
-		if (!gitRoot) {
-			return worktreePath;
-		}
-
-		// Get the parent directory of git root
-		const gitRootParent = path.dirname(gitRoot);
-		const gitRootName = path.basename(gitRoot);
-
-		// If the worktree path starts with the git root parent, make it relative
-		if (worktreePath.startsWith(gitRootParent)) {
-			// Get relative path from parent directory
-			const relativeFromParent = path.relative(gitRootParent, worktreePath);
-			return relativeFromParent;
-		}
-
-		// Otherwise return the original path
-		return worktreePath;
-	} catch {
-		return worktreePath;
-	}
-}
-
 export function createWorktree(branchName: string): string {
 	// Get the git directory
 	const gitDir = execSync("git rev-parse --git-dir", {

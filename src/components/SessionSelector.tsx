@@ -1,13 +1,14 @@
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
+import * as path from "node:path";
 import * as React from "react";
 import {
 	type GitRef,
 	type GitWorktree,
 	getBranchesAndTags,
 	getGitRoot,
+	getRepositoryName,
 	getWorktreeDisplayName,
-	getWorktreeRelativePath,
 	getWorktrees,
 	isGitRepo,
 } from "../utils/gitUtils.js";
@@ -50,6 +51,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 		string | null
 	>(null);
 	const [branchError, setBranchError] = React.useState<string | null>(null);
+	const [repoName, setRepoName] = React.useState<string | null>(null);
 
 	// Load worktrees on mount
 	React.useEffect(() => {
@@ -70,6 +72,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 					setError("Could not find git repository root");
 					return;
 				}
+
+				// Get repository name
+				const repositoryName = getRepositoryName(gitRoot);
+				setRepoName(repositoryName);
 
 				// Get all worktrees
 				const foundWorktrees = getWorktrees(gitRoot);
@@ -330,8 +336,22 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 
 				if (option.type === "worktree") {
 					const isFirstWorktree = index === 2; // After create-new and create-new-from
-					const relativePath = getWorktreeRelativePath(option.worktree.path);
 					const branchName = getWorktreeDisplayName(option.worktree);
+					const gitRoot = getGitRoot();
+					const isMainWorktree = gitRoot === option.worktree.path;
+
+					// Format display based on whether it's main worktree or not
+					let displayText = "";
+					if (isMainWorktree) {
+						// Main repository: repoName:branchName
+						displayText = repoName ? `${repoName}:${branchName}` : branchName;
+					} else {
+						// Git worktree: repoName/worktreeDirName:branchName
+						const worktreeDirName = path.basename(option.worktree.path);
+						displayText = repoName
+							? `${repoName}/${worktreeDirName}:${branchName}`
+							: `${worktreeDirName}:${branchName}`;
+					}
 
 					return (
 						<Box key={option.worktree.path} flexDirection="column">
@@ -346,8 +366,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 							<Box>
 								<Text color={isSelected ? "green" : undefined}>
 									{isSelected ? "▶ " : "  "}
-									<Text color="gray">📁</Text> {relativePath}{" "}
-									<Text color="dim">({branchName})</Text>
+									<Text color="gray">📁</Text> {displayText}
 								</Text>
 							</Box>
 						</Box>
