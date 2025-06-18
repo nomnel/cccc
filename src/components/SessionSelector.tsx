@@ -2,7 +2,9 @@ import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import * as React from "react";
 import {
+	type GitRef,
 	type GitWorktree,
+	getBranchesAndTags,
 	getGitRoot,
 	getWorktreeDisplayName,
 	getWorktrees,
@@ -11,26 +13,34 @@ import {
 
 interface SessionSelectorProps {
 	onSelectNewBranch: (branchName: string) => void;
+	onSelectNewBranchFromRef: (branchName: string, baseBranch: string) => void;
 	onSelectWorktree: (worktreePath: string) => void;
 	onBack: () => void;
 }
 
 type MenuOption =
 	| { type: "create-new" }
+	| { type: "create-new-from" }
 	| { type: "worktree"; worktree: GitWorktree }
 	| { type: "back" };
 
+type BranchSelectionMode = "none" | "create-new" | "select-base" | "create-new-from";
+
 export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	onSelectNewBranch,
+	onSelectNewBranchFromRef,
 	onSelectWorktree,
 	onBack,
 }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 	const [worktrees, setWorktrees] = React.useState<GitWorktree[]>([]);
+	const [branchesAndTags, setBranchesAndTags] = React.useState<GitRef[]>([]);
 	const [error, setError] = React.useState<string | null>(null);
 	const [loading, setLoading] = React.useState(true);
-	const [isCreatingBranch, setIsCreatingBranch] = React.useState(false);
+	const [branchMode, setBranchMode] = React.useState<BranchSelectionMode>("none");
 	const [branchName, setBranchName] = React.useState("");
+	const [selectedBaseIndex, setSelectedBaseIndex] = React.useState(0);
+	const [selectedBaseBranch, setSelectedBaseBranch] = React.useState<string | null>(null);
 	const [branchError, setBranchError] = React.useState<string | null>(null);
 
 	// Load worktrees on mount
@@ -56,6 +66,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 				// Get all worktrees
 				const foundWorktrees = getWorktrees(gitRoot);
 				setWorktrees(foundWorktrees);
+				
+				// Get branches and tags
+				const refs = getBranchesAndTags();
+				setBranchesAndTags(refs);
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to load worktrees",
@@ -70,7 +84,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 
 	// Build options array
 	const options = React.useMemo((): MenuOption[] => {
-		const result: MenuOption[] = [{ type: "create-new" }];
+		const result: MenuOption[] = [
+			{ type: "create-new" },
+			{ type: "create-new-from" },
+		];
 
 		// Add separator (visual only, not selectable)
 		for (const worktree of worktrees) {
@@ -98,15 +115,49 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			return;
 		}
 
-		onSelectNewBranch(trimmedValue);
+		if (branchMode === "create-new") {
+			onSelectNewBranch(trimmedValue);
+		} else if (branchMode === "create-new-from" && selectedBaseBranch) {
+			// Create branch from the selected base
+			onSelectNewBranchFromRef(trimmedValue, selectedBaseBranch);
+		}
 	};
 
 	useInput((input, key) => {
-		if (isCreatingBranch) {
+		if (branchMode === "create-new") {
 			if (key.escape) {
-				setIsCreatingBranch(false);
+				setBranchMode("none");
 				setBranchName("");
 				setBranchError(null);
+			}
+			return;
+		}
+		
+		if (branchMode === "create-new-from") {
+			if (key.escape) {
+				setBranchMode("select-base");
+				setBranchName("");
+				setBranchError(null);
+			}
+			return;
+		}
+		
+		if (branchMode === "select-base") {
+			if (key.upArrow || (key.ctrl && input === "p")) {
+				setSelectedBaseIndex((prev) => (prev > 0 ? prev - 1 : branchesAndTags.length - 1));
+			}
+			if (key.downArrow || (key.ctrl && input === "n")) {
+				setSelectedBaseIndex((prev) => (prev < branchesAndTags.length - 1 ? prev + 1 : 0));
+			}
+			if (key.return && branchesAndTags[selectedBaseIndex]) {
+				const baseBranch = branchesAndTags[selectedBaseIndex].name;
+				setSelectedBaseBranch(baseBranch);
+				setBranchMode("create-new-from");
+			}
+			if (key.escape) {
+				setBranchMode("none");
+				setSelectedBaseIndex(0);
+				setSelectedBaseBranch(null);
 			}
 			return;
 		}
@@ -122,7 +173,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			if (!option) return;
 
 			if (option.type === "create-new") {
-				setIsCreatingBranch(true);
+				setBranchMode("create-new");
+			} else if (option.type === "create-new-from") {
+				setBranchMode("select-base");
+				setSelectedBaseIndex(0);
 			} else if (option.type === "worktree" && "worktree" in option) {
 				onSelectWorktree(option.worktree.path);
 			} else if (option.type === "back") {
@@ -151,11 +205,63 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 		);
 	}
 
-	if (isCreatingBranch) {
+	if (branchMode === "create-new") {
 		return (
 			<Box flexDirection="column">
 				<Text color="blue" bold>
 					Create New Branch and Worktree
+				</Text>
+				<Box marginTop={1} marginBottom={1}>
+					<Text>Enter branch name: </Text>
+					<TextInput
+						value={branchName}
+						onChange={setBranchName}
+						onSubmit={handleBranchSubmit}
+						placeholder="feature/my-new-feature"
+					/>
+				</Box>
+				{branchError && (
+					<Box marginBottom={1}>
+						<Text color="red">{branchError}</Text>
+					</Box>
+				)}
+				<Box marginTop={1}>
+					<Text dimColor>Press Enter to create • Press Escape to go back</Text>
+				</Box>
+			</Box>
+		);
+	}
+	
+	if (branchMode === "select-base") {
+		return (
+			<Box flexDirection="column">
+				<Text color="blue" bold>
+					Select base branch or tag
+				</Text>
+				<Text> </Text>
+				{branchesAndTags.map((ref, index) => {
+					const isSelected = selectedBaseIndex === index;
+					return (
+						<Box key={`${ref.type}-${ref.name}`}>
+							<Text color={isSelected ? "green" : undefined}>
+								{isSelected ? "▶ " : "  "}
+								<Text color="gray">{ref.type === "branch" ? "⎇" : "◉"}</Text> {ref.name}
+							</Text>
+						</Box>
+					);
+				})}
+				<Box marginTop={1}>
+					<Text dimColor>Press Enter to continue • Press Escape to go back</Text>
+				</Box>
+			</Box>
+		);
+	}
+	
+	if (branchMode === "create-new-from") {
+		return (
+			<Box flexDirection="column">
+				<Text color="blue" bold>
+					Create New Branch from: {selectedBaseBranch}
 				</Text>
 				<Box marginTop={1} marginBottom={1}>
 					<Text>Enter branch name: </Text>
@@ -191,6 +297,17 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
 								<Text bold>+</Text> Create new branch...
+							</Text>
+						</Box>
+					);
+				}
+				
+				if (option.type === "create-new-from") {
+					return (
+						<Box key="create-new-from">
+							<Text color={isSelected ? "green" : undefined}>
+								{isSelected ? "▶ " : "  "}
+								<Text bold>+</Text> Create new branch from...
 							</Text>
 						</Box>
 					);

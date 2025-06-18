@@ -13,7 +13,7 @@ import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
-import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
+import { createWorktree, createWorktreeFromRef, isGitRepo } from "./utils/gitUtils.js";
 import {
 	type SettingsFile,
 	copySettingsToWorktree,
@@ -55,6 +55,7 @@ const App: React.FC = () => {
 		null,
 	);
 	const [pendingBranch, setPendingBranch] = React.useState<string | null>(null);
+	const [pendingBaseBranch, setPendingBaseBranch] = React.useState<string | null>(null);
 	const [settingsFiles, setSettingsFiles] = React.useState<SettingsFile[]>([]);
 
 	// Handle Ctrl+Q to return to menu when in claude screen
@@ -251,12 +252,54 @@ const App: React.FC = () => {
 		switchToMenu();
 	}, [switchToMenu]);
 
+	const handleBranchFromRefSubmit = React.useCallback(
+		(branchName: string, baseBranch: string) => {
+			// Check if we're in a git repository
+			if (!isGitRepo()) {
+				console.error("Not in a git repository");
+				switchToMenu();
+				return;
+			}
+
+			// Store the branch names for later use
+			setPendingBranch(branchName);
+			setPendingBaseBranch(baseBranch);
+
+			// Check for settings files in ~/.claude/ and ./.claude/
+			const settings = findSettingsFiles();
+
+			if (settings.length > 0) {
+				// Settings found, show selector
+				setSettingsFiles(settings);
+				switchToSettingsSelect();
+			} else {
+				// No settings files, create worktree and launch directly
+				try {
+					const worktreePath = createWorktreeFromRef(branchName, baseBranch);
+					launchNewSession(worktreePath);
+				} catch (error) {
+					console.error("Failed to create worktree:", error);
+					switchToMenu();
+				}
+			}
+		},
+		[launchNewSession, switchToMenu, switchToSettingsSelect],
+	);
+
 	const handleSettingsSelect = React.useCallback(
 		(settingsPath: string | null, settingsName?: string) => {
 			let worktreePath: string | undefined;
 
 			// If we have a pending branch, create the worktree now
-			if (pendingBranch) {
+			if (pendingBranch && pendingBaseBranch) {
+				try {
+					worktreePath = createWorktreeFromRef(pendingBranch, pendingBaseBranch);
+				} catch (error) {
+					console.error("Failed to create worktree:", error);
+					switchToMenu();
+					return;
+				}
+			} else if (pendingBranch) {
 				try {
 					worktreePath = createWorktree(pendingBranch);
 				} catch (error) {
@@ -285,15 +328,17 @@ const App: React.FC = () => {
 				launchNewSession(worktreePath, localSettingsPath, settingsName);
 				setPendingWorktree(null);
 				setPendingBranch(null);
+				setPendingBaseBranch(null);
 				setSettingsFiles([]);
 			}
 		},
-		[pendingWorktree, pendingBranch, launchNewSession, switchToMenu],
+		[pendingWorktree, pendingBranch, pendingBaseBranch, launchNewSession, switchToMenu],
 	);
 
 	const handleSettingsBack = React.useCallback(() => {
 		setPendingWorktree(null);
 		setPendingBranch(null);
+		setPendingBaseBranch(null);
 		setSettingsFiles([]);
 
 		// Go back to appropriate screen
@@ -349,6 +394,7 @@ const App: React.FC = () => {
 		return (
 			<SessionSelector
 				onSelectNewBranch={handleBranchSubmit}
+				onSelectNewBranchFromRef={handleBranchFromRefSubmit}
 				onSelectWorktree={handleWorktreeSelect}
 				onBack={switchToMenu}
 			/>

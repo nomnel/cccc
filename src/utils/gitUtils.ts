@@ -248,3 +248,64 @@ export function getWorktrees(gitRoot: string): GitWorktree[] {
 		return [];
 	}
 }
+
+export interface GitRef {
+	name: string;
+	type: "branch" | "tag";
+}
+
+export function getBranchesAndTags(): GitRef[] {
+	try {
+		const refs: GitRef[] = [];
+		
+		// Get all branches
+		const branchesOutput = execSync("git branch -a --format='%(refname:short)'", {
+			encoding: "utf8",
+		});
+		const branches = branchesOutput.trim().split("\n").filter(Boolean);
+		for (const branch of branches) {
+			// Skip remote tracking branches
+			if (!branch.startsWith("remotes/")) {
+				refs.push({ name: branch, type: "branch" });
+			}
+		}
+		
+		// Get all tags
+		const tagsOutput = execSync("git tag -l", {
+			encoding: "utf8",
+		});
+		const tags = tagsOutput.trim().split("\n").filter(Boolean);
+		for (const tag of tags) {
+			refs.push({ name: tag, type: "tag" });
+		}
+		
+		return refs;
+	} catch (error) {
+		return [];
+	}
+}
+
+export function createWorktreeFromRef(branchName: string, baseBranch: string): string {
+	// Get the git directory
+	const gitDir = execSync("git rev-parse --git-dir", {
+		encoding: "utf8",
+	}).trim();
+
+	// Create path under .git/worktrees/
+	const worktreePath = path.join(gitDir, "worktrees", branchName);
+
+	try {
+		// Create the worktree with a new branch based on the specified ref
+		execSync(`git worktree add -b ${branchName} "${worktreePath}" ${baseBranch}`, {
+			encoding: "utf8",
+		});
+
+		// Get the absolute path of the created worktree
+		const absolutePath = path.resolve(worktreePath);
+		return absolutePath;
+	} catch (error) {
+		throw new Error(
+			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
