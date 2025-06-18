@@ -70,16 +70,10 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 				{
 					path: "/path/to/repo-feature",
 					branch: "feature-branch",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: false,
 				},
 			];
 
@@ -104,9 +98,6 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			];
 
@@ -115,7 +106,9 @@ describe("WorktreeMenu", () => {
 			const { lastFrame } = render(<WorktreeMenu {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				const lines = lastFrame().split("\n");
+				const frame = lastFrame();
+				if (!frame) return;
+				const lines = frame.split("\n");
 				const selectedLine = lines.find((line) => line.includes("▶"));
 				expect(selectedLine).toBeDefined();
 				expect(selectedLine).toContain("main");
@@ -127,9 +120,6 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			];
 
@@ -151,9 +141,6 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 
@@ -170,9 +157,6 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 
@@ -189,9 +173,6 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 
@@ -239,23 +220,14 @@ describe("WorktreeMenu", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: true,
 				},
 				{
 					path: "/path/to/repo-feature",
 					branch: "feature/new-ui",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: false,
 				},
 				{
 					path: "/path/to/repo-hotfix",
 					branch: "hotfix/urgent",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: false,
 				},
 			];
 

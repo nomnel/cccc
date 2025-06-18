@@ -17,19 +17,22 @@ describe("SettingsSelector", () => {
 
 	const mockSettingsFiles: SettingsFile[] = [
 		{
-			name: "production",
 			path: "/path/to/production.json",
-			isDefault: false,
+			filename: "settings.production.json",
+			name: "production",
+			source: "home",
 		},
 		{
-			name: "development",
 			path: "/path/to/development.json",
-			isDefault: true,
+			filename: "settings.development.json",
+			name: "development",
+			source: "home",
 		},
 		{
-			name: "staging",
 			path: "/path/to/staging.json",
-			isDefault: false,
+			filename: "settings.staging.json",
+			name: "staging",
+			source: "local",
 		},
 	];
 
@@ -79,7 +82,9 @@ describe("SettingsSelector", () => {
 			const { lastFrame } = render(<SettingsSelector {...defaultProps} />);
 
 			// First option should be selected by default
-			const lines = lastFrame().split("\n");
+			const frame = lastFrame();
+			if (!frame) return;
+			const lines = frame.split("\n");
 			const selectedLine = lines.find((line) => line.includes("▶"));
 			expect(selectedLine).toBeDefined();
 			expect(selectedLine).toContain("production");
@@ -132,9 +137,9 @@ describe("SettingsSelector", () => {
 			const { lastFrame } = render(<SettingsSelector {...props} />);
 
 			// Should have exactly 2 options
-			const lines = lastFrame()
-				.split("\n")
-				.filter((line) => line.trim());
+			const frame = lastFrame();
+			if (!frame) return;
+			const lines = frame.split("\n").filter((line) => line.trim());
 			const optionLines = lines.filter(
 				(line) =>
 					line.includes("Continue without settings") ||
@@ -152,7 +157,9 @@ describe("SettingsSelector", () => {
 			const totalOptions = mockSettingsFiles.length + 2; // + "Continue without" + "Back"
 
 			// Count lines with either ▶ or spaces at the beginning (indicating options)
-			const lines = lastFrame().split("\n");
+			const frame = lastFrame();
+			if (!frame) return;
+			const lines = frame.split("\n");
 			const optionLines = lines.filter(
 				(line) =>
 					line.trimStart().startsWith("▶") ||

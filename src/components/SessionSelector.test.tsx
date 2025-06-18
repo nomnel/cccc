@@ -70,16 +70,10 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 				{
 					path: "/path/to/repo-feature",
 					branch: "feature-branch",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: false,
 				},
 			];
 
@@ -115,9 +109,6 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 
@@ -133,6 +124,7 @@ describe("SessionSelector", () => {
 			stdin.write("\x1B[B"); // Down arrow
 			await vi.waitFor(() => {
 				const frame = lastFrame();
+				if (!frame) return;
 				const lines = frame.split("\n");
 				const selectedLine = lines.find((line) => line.includes("▶"));
 				expect(selectedLine).toContain("Create new branch from...");
@@ -210,9 +202,6 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: true,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			];
 
@@ -251,9 +240,6 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/my-project",
 					branch: "main",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 			vi.mocked(gitUtils.getRepositoryName).mockReturnValue("my-project");
@@ -270,9 +256,6 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/my-project-feature",
 					branch: "feature/new-ui",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: false,
 				},
 			]);
 			vi.mocked(gitUtils.getRepositoryName).mockReturnValue("my-project");
@@ -291,9 +274,6 @@ describe("SessionSelector", () => {
 				{
 					path: "/path/to/repo",
 					branch: "main",
-					isCurrentWorktree: false,
-					isBare: false,
-					isMainWorktree: true,
 				},
 			]);
 

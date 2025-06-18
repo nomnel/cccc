@@ -19,8 +19,11 @@ describe("BranchInput", () => {
 		);
 
 		// Component should render even with mocked TextInput
-		expect(lastFrame()).toBeDefined();
-		expect(lastFrame().includes("Create New Branch and Worktree")).toBe(true);
+		const frame = lastFrame();
+		expect(frame).toBeDefined();
+		if (frame) {
+			expect(frame.includes("Create New Branch and Worktree")).toBe(true);
+		}
 	});
 
 	it("should handle escape key press", () => {
