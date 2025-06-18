@@ -1,8 +1,8 @@
-import React from "react";
 import { render } from "ink-testing-library";
+import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { WorktreeManager } from "./WorktreeManager.js";
 import * as gitUtils from "../utils/gitUtils.js";
+import { WorktreeManager } from "./WorktreeManager.js";
 
 vi.mock("../utils/gitUtils.js");
 

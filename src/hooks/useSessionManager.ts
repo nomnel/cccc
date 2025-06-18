@@ -1,7 +1,7 @@
 import * as React from "react";
 import { SESSION_PREFIX } from "../constants.js";
 import type { Screen, Session } from "../types.js";
-import { getSessionStatus, getSessionPreview } from "../utils/sessionUtils.js";
+import { getSessionPreview, getSessionStatus } from "../utils/sessionUtils.js";
 
 export const useSessionManager = () => {
 	const [sessions, setSessions] = React.useState<Session[]>([]);
@@ -67,6 +67,11 @@ export const useSessionManager = () => {
 		setCurrentSessionId(null);
 	}, []);
 
+	const switchToSessionSelector = React.useCallback(() => {
+		setCurrentScreen("session_selector");
+		setCurrentSessionId(null);
+	}, []);
+
 	const killAllSessions = React.useCallback(() => {
 		for (const session of sessions) {
 			if (session.dataDisposable) {
@@ -112,6 +117,7 @@ export const useSessionManager = () => {
 		switchToBranchInput,
 		switchToSettingsSelect,
 		switchToWorktreeManager,
+		switchToSessionSelector,
 		killAllSessions,
 		appendOutput,
 	};

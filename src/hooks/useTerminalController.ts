@@ -1,5 +1,5 @@
-import * as React from "react";
 import pty from "node-pty";
+import * as React from "react";
 import { TERMINAL_CONFIG } from "../constants.js";
 import type { EventListeners } from "../types.js";
 

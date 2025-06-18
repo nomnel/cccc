@@ -19,7 +19,15 @@
 		"test:coverage": "vitest --coverage",
 		"prepublishOnly": "pnpm run build && pnpm test"
 	},
-	"keywords": ["claude", "cli", "terminal", "ui", "wrapper", "session", "management"],
+	"keywords": [
+		"claude",
+		"cli",
+		"terminal",
+		"ui",
+		"wrapper",
+		"session",
+		"management"
+	],
 	"author": "nomnel",
 	"license": "MIT",
 	"repository": {

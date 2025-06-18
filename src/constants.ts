@@ -13,13 +13,13 @@ export const SCREENS = {
 	BRANCH_INPUT: "branch_input",
 	SETTINGS_SELECT: "settings_select",
 	WORKTREE_MANAGER: "worktree_manager",
+	SESSION_SELECTOR: "session_selector",
 } as const;
 
 export const SESSION_PREFIX = "session-";
 
 export const MENU_OPTIONS = {
-	START: "start",
-	WORKTREE: "worktree",
+	START_NEW_SESSION: "start_new_session",
 	MANAGE_WORKTREES: "manage_worktrees",
 	EXIT: "exit",
 } as const;

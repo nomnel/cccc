@@ -54,14 +54,14 @@ describe("constants", () => {
 
 	describe("MENU_OPTIONS", () => {
 		it("すべてのメニューオプションが定義されている", () => {
-			expect(MENU_OPTIONS.START).toBe("start");
-			expect(MENU_OPTIONS.WORKTREE).toBe("worktree");
+			expect(MENU_OPTIONS.START_NEW_SESSION).toBe("start_new_session");
+			expect(MENU_OPTIONS.MANAGE_WORKTREES).toBe("manage_worktrees");
 			expect(MENU_OPTIONS.EXIT).toBe("exit");
 		});
 
 		it("すべての値が文字列である", () => {
-			expect(typeof MENU_OPTIONS.START).toBe("string");
-			expect(typeof MENU_OPTIONS.WORKTREE).toBe("string");
+			expect(typeof MENU_OPTIONS.START_NEW_SESSION).toBe("string");
+			expect(typeof MENU_OPTIONS.MANAGE_WORKTREES).toBe("string");
 			expect(typeof MENU_OPTIONS.EXIT).toBe("string");
 		});
 	});

@@ -1,23 +1,24 @@
+import path from "node:path";
+import { render, useApp, useInput } from "ink";
 import * as React from "react";
-import { render, useInput, useApp } from "ink";
-import { Menu } from "./components/Menu.js";
-import { WorktreeMenu } from "./components/WorktreeMenu.js";
-import { WorktreeManager } from "./components/WorktreeManager.js";
 import { BranchInput } from "./components/BranchInput.js";
+import { Menu } from "./components/Menu.js";
+import { SessionSelector } from "./components/SessionSelector.js";
 import { SettingsSelector } from "./components/SettingsSelector.js";
-import { useSessionManager } from "./hooks/useSessionManager.js";
-import { useEventListeners } from "./hooks/useEventListeners.js";
-import { useTerminalController } from "./hooks/useTerminalController.js";
+import { WorktreeManager } from "./components/WorktreeManager.js";
+import { WorktreeMenu } from "./components/WorktreeMenu.js";
 import { MENU_OPTIONS, SCREENS } from "./constants.js";
+import { useEventListeners } from "./hooks/useEventListeners.js";
+import { useSessionManager } from "./hooks/useSessionManager.js";
+import { useTerminalController } from "./hooks/useTerminalController.js";
+import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
 import { createWorktree, isGitRepo } from "./utils/gitUtils.js";
 import {
-	findSettingsFiles,
-	copySettingsToWorktree,
 	type SettingsFile,
+	copySettingsToWorktree,
+	findSettingsFiles,
 } from "./utils/settingsUtils.js";
-import type { Session } from "./types.js";
-import path from "node:path";
 
 const App: React.FC = () => {
 	const {
@@ -34,6 +35,7 @@ const App: React.FC = () => {
 		switchToBranchInput,
 		switchToSettingsSelect,
 		switchToWorktreeManager,
+		switchToSessionSelector,
 		killAllSessions,
 		appendOutput,
 	} = useSessionManager();
@@ -169,10 +171,8 @@ const App: React.FC = () => {
 
 	const handleSelect = React.useCallback(
 		(option: string) => {
-			if (option === MENU_OPTIONS.START) {
-				switchToBranchInput();
-			} else if (option === MENU_OPTIONS.WORKTREE) {
-				switchToWorktree();
+			if (option === MENU_OPTIONS.START_NEW_SESSION) {
+				switchToSessionSelector();
 			} else if (option === MENU_OPTIONS.MANAGE_WORKTREES) {
 				switchToWorktreeManager();
 			} else if (option === MENU_OPTIONS.EXIT) {
@@ -184,8 +184,7 @@ const App: React.FC = () => {
 			}
 		},
 		[
-			switchToBranchInput,
-			switchToWorktree,
+			switchToSessionSelector,
 			switchToWorktreeManager,
 			killAllSessions,
 			exit,
@@ -344,6 +343,16 @@ const App: React.FC = () => {
 
 	if (currentScreen === SCREENS.WORKTREE_MANAGER) {
 		return <WorktreeManager onBack={switchToMenu} />;
+	}
+
+	if (currentScreen === SCREENS.SESSION_SELECTOR) {
+		return (
+			<SessionSelector
+				onSelectNewBranch={handleBranchSubmit}
+				onSelectWorktree={handleWorktreeSelect}
+				onBack={switchToMenu}
+			/>
+		);
 	}
 
 	// Return null when claude is running

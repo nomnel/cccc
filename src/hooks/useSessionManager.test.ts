@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { useSessionManager } from "./useSessionManager.js";
 import type { IPty } from "node-pty";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useSessionManager } from "./useSessionManager.js";
 
 // モックプロセスを作成
 const createMockPtyProcess = (): Partial<IPty> => ({

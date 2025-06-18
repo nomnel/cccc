@@ -1,11 +1,11 @@
-import * as React from "react";
 import { Box, Text, useInput } from "ink";
+import * as React from "react";
 import {
-	getWorktrees,
-	getWorktreeDisplayName,
-	isGitRepo,
-	getGitRoot,
 	type GitWorktree,
+	getGitRoot,
+	getWorktreeDisplayName,
+	getWorktrees,
+	isGitRepo,
 } from "../utils/gitUtils.js";
 
 interface WorktreeMenuProps {

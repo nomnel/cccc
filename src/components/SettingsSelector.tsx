@@ -1,5 +1,5 @@
-import * as React from "react";
 import { Box, Text, useInput } from "ink";
+import * as React from "react";
 import type { SettingsFile } from "../utils/settingsUtils.js";
 import { getSettingsDisplayName } from "../utils/settingsUtils.js";
 

@@ -6,7 +6,8 @@ export type Screen =
 	| "worktree"
 	| "branch_input"
 	| "settings_select"
-	| "worktree_manager";
+	| "worktree_manager"
+	| "session_selector";
 
 export type Session = {
 	id: string;

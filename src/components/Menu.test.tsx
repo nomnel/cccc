@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import React from "react";
-import { render, act } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { IPty } from "node-pty";
-import { Menu } from "./Menu.js";
+import React from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MENU_OPTIONS } from "../constants.js";
 import type { Session } from "../types.js";
+import { Menu } from "./Menu.js";
 
 // Inkのモック
 vi.mock("ink", () => {
@@ -84,16 +84,16 @@ describe("Menu", () => {
 	it("必要な定数が正しく定義されている", async () => {
 		const { MENU_OPTIONS } = await import("../constants.js");
 
-		expect(MENU_OPTIONS.START).toBeDefined();
-		expect(MENU_OPTIONS.WORKTREE).toBeDefined();
+		expect(MENU_OPTIONS.START_NEW_SESSION).toBeDefined();
+		expect(MENU_OPTIONS.MANAGE_WORKTREES).toBeDefined();
 		expect(MENU_OPTIONS.EXIT).toBeDefined();
-		expect(typeof MENU_OPTIONS.START).toBe("string");
-		expect(typeof MENU_OPTIONS.WORKTREE).toBe("string");
+		expect(typeof MENU_OPTIONS.START_NEW_SESSION).toBe("string");
+		expect(typeof MENU_OPTIONS.MANAGE_WORKTREES).toBe("string");
 		expect(typeof MENU_OPTIONS.EXIT).toBe("string");
 	});
 
 	describe("メニューオプションの表示", () => {
-		it("セッションなしの場合、START、WORKTREE、EXIT オプションが表示される", () => {
+		it("セッションなしの場合、START_NEW_SESSION、MANAGE_WORKTREES、EXIT オプションが表示される", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = [];
 
@@ -109,8 +109,8 @@ describe("Menu", () => {
 				(span) => (span as HTMLElement).textContent,
 			);
 
-			expect(textContents).toContain(`▶ ${MENU_OPTIONS.START}`);
-			expect(textContents).toContain(`  ${MENU_OPTIONS.WORKTREE}`);
+			expect(textContents).toContain("▶ start new session");
+			expect(textContents).toContain("  manage worktrees");
 			expect(textContents).toContain(`  ${MENU_OPTIONS.EXIT}`);
 		});
 
@@ -147,7 +147,7 @@ describe("Menu", () => {
 				(span) => (span as HTMLElement).textContent,
 			);
 
-			expect(textContents).toContain(`▶ ${MENU_OPTIONS.START}`);
+			expect(textContents).toContain("▶ start new session");
 			// Check that session IDs are contained within the text content
 			const hasSession1 = textContents.some((text) =>
 				text?.includes("session-1"),
@@ -172,7 +172,7 @@ describe("Menu", () => {
 			);
 
 			const selectedText = container.querySelector('[data-color="green"]');
-			expect(selectedText?.textContent).toBe(`▶ ${MENU_OPTIONS.START}`);
+			expect(selectedText?.textContent).toBe("▶ start new session");
 		});
 
 		it("複数セッションがある場合も最初のオプションが選択状態", () => {
@@ -204,7 +204,7 @@ describe("Menu", () => {
 			);
 
 			const selectedText = container.querySelector('[data-color="green"]');
-			expect(selectedText?.textContent).toBe(`▶ ${MENU_OPTIONS.START}`);
+			expect(selectedText?.textContent).toBe("▶ start new session");
 		});
 	});
 
@@ -319,15 +319,15 @@ describe("Menu", () => {
 
 			// オプション配列の検証のため、実際のコンポーネントロジックをテスト
 			const expectedOptions = [
-				MENU_OPTIONS.START,
-				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.START_NEW_SESSION,
+				MENU_OPTIONS.MANAGE_WORKTREES,
 				MENU_OPTIONS.EXIT,
 			];
 
 			// コンポーネント内でのオプション生成ロジックをテスト
 			const options = [
-				MENU_OPTIONS.START,
-				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.START_NEW_SESSION,
+				MENU_OPTIONS.MANAGE_WORKTREES,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];
@@ -356,16 +356,16 @@ describe("Menu", () => {
 			];
 
 			const expectedOptions = [
-				MENU_OPTIONS.START,
-				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.START_NEW_SESSION,
+				MENU_OPTIONS.MANAGE_WORKTREES,
 				"session-1",
 				"session-2",
 				MENU_OPTIONS.EXIT,
 			];
 
 			const options = [
-				MENU_OPTIONS.START,
-				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.START_NEW_SESSION,
+				MENU_OPTIONS.MANAGE_WORKTREES,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];
@@ -385,14 +385,14 @@ describe("Menu", () => {
 
 			const expectedLength = 1 + 1 + sessions.length + 1; // START + WORKTREE + セッション数 + EXIT
 			const options = [
-				MENU_OPTIONS.START,
-				MENU_OPTIONS.WORKTREE,
+				MENU_OPTIONS.START_NEW_SESSION,
+				MENU_OPTIONS.MANAGE_WORKTREES,
 				...sessions.map((s) => s.id),
 				MENU_OPTIONS.EXIT,
 			];
 
 			expect(options).toHaveLength(expectedLength);
-			expect(options[0]).toBe(MENU_OPTIONS.START);
+			expect(options[0]).toBe(MENU_OPTIONS.START_NEW_SESSION);
 			expect(options[options.length - 1]).toBe(MENU_OPTIONS.EXIT);
 
 			// 全セッションが含まれていることを確認

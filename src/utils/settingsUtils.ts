@@ -1,13 +1,13 @@
 import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
 	readdirSync,
 	statSync,
-	existsSync,
-	readFileSync,
-	copyFileSync,
-	mkdirSync,
 } from "node:fs";
-import path from "node:path";
 import { homedir } from "node:os";
+import path from "node:path";
 
 export interface SettingsFile {
 	path: string;

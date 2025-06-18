@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
+import React, { useEffect, useState } from "react";
 import type { Worktree, WorktreeStatus } from "../utils/gitUtils.js";
 import {
 	deleteWorktree,
-	getWorktreesAsync,
 	getWorktreeStatus,
+	getWorktreesAsync,
 } from "../utils/gitUtils.js";
 
 interface WorktreeWithStatus extends Worktree {

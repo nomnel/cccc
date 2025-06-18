@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getShell, isMenuOption, isSessionId } from "./utils.js";
 import { MENU_OPTIONS } from "./constants.js";
+import { getShell, isMenuOption, isSessionId } from "./utils.js";
 
 describe("utils", () => {
 	describe("getShell", () => {
@@ -48,8 +48,8 @@ describe("utils", () => {
 	});
 
 	describe("isMenuOption", () => {
-		it("startオプションの場合はtrueを返す", () => {
-			expect(isMenuOption(MENU_OPTIONS.START)).toBe(true);
+		it("start new sessionオプションの場合はtrueを返す", () => {
+			expect(isMenuOption(MENU_OPTIONS.START_NEW_SESSION)).toBe(true);
 		});
 
 		it("exitオプションの場合はtrueを返す", () => {
@@ -69,7 +69,7 @@ describe("utils", () => {
 		});
 
 		it("メニューオプションの場合はfalseを返す", () => {
-			expect(isSessionId(MENU_OPTIONS.START)).toBe(false);
+			expect(isSessionId(MENU_OPTIONS.START_NEW_SESSION)).toBe(false);
 			expect(isSessionId(MENU_OPTIONS.EXIT)).toBe(false);
 		});
 	});

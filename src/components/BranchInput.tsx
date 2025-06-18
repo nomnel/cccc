@@ -1,6 +1,6 @@
-import * as React from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
+import * as React from "react";
 
 interface BranchInputProps {
 	onSubmit: (branchName: string) => void;

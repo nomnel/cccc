@@ -1,8 +1,8 @@
-import * as React from "react";
+import path from "node:path";
 import { Box, Text, useInput } from "ink";
+import * as React from "react";
 import { MENU_OPTIONS } from "../constants.js";
 import type { Session } from "../types.js";
-import path from "node:path";
 
 interface MenuProps {
 	onSelect: (option: string) => void;
@@ -11,6 +11,20 @@ interface MenuProps {
 
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
+
+	// Get display text for menu options
+	const getOptionDisplayText = (option: string): string => {
+		switch (option) {
+			case MENU_OPTIONS.START_NEW_SESSION:
+				return "start new session";
+			case MENU_OPTIONS.MANAGE_WORKTREES:
+				return "manage worktrees";
+			case MENU_OPTIONS.EXIT:
+				return "exit";
+			default:
+				return option;
+		}
+	};
 
 	// Format timestamp to show relative time
 	const formatTimestamp = (date: Date): string => {
@@ -27,11 +41,10 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 		return "just now";
 	};
 
-	// Build options array: start, worktree, manage worktrees, sessions, exit
+	// Build options array: start new session, manage worktrees, sessions, exit
 	const options = React.useMemo(() => {
 		const result: string[] = [
-			MENU_OPTIONS.START,
-			MENU_OPTIONS.WORKTREE,
+			MENU_OPTIONS.START_NEW_SESSION,
 			MENU_OPTIONS.MANAGE_WORKTREES,
 		];
 		for (const session of sessions) {
@@ -62,9 +75,8 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 				<Box key={option}>
 					<Text color={selectedIndex === index ? "green" : undefined}>
 						{selectedIndex === index ? "▶ " : "  "}
-						{option}
-						{option !== MENU_OPTIONS.START &&
-							option !== MENU_OPTIONS.WORKTREE &&
+						{getOptionDisplayText(option)}
+						{option !== MENU_OPTIONS.START_NEW_SESSION &&
 							option !== MENU_OPTIONS.MANAGE_WORKTREES &&
 							option !== MENU_OPTIONS.EXIT &&
 							(() => {

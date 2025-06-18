@@ -1,6 +1,6 @@
 import { exec, execSync } from "node:child_process";
-import { promisify } from "node:util";
 import path from "node:path";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
@@ -188,7 +188,13 @@ export function getWorktreeDisplayName(worktree: GitWorktree): string {
 }
 
 export function createWorktree(branchName: string): string {
-	const worktreePath = path.join("..", branchName);
+	// Get the git directory
+	const gitDir = execSync("git rev-parse --git-dir", {
+		encoding: "utf8",
+	}).trim();
+
+	// Create path under .git/worktrees/
+	const worktreePath = path.join(gitDir, "worktrees", branchName);
 
 	try {
 		// Create the worktree with a new branch
