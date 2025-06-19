@@ -27,7 +27,7 @@ try {
 
 // Run the compiled application
 try {
-  await import(path.join(distPath, 'index.js'));
+  await import(path.join(distPath, 'cli.js'));
 } catch (error) {
   console.error('Failed to run the application:', error.message);
   process.exit(1);

@@ -160,9 +160,13 @@ export interface GitWorktree {
 	branch: string;
 }
 
-export function isGitRepo(): boolean {
+export function isGitRepo(cwd?: string): boolean {
 	try {
-		execSync("git rev-parse --git-dir", { stdio: "ignore" });
+		const options: { stdio: "ignore"; cwd?: string } = { stdio: "ignore" };
+		if (cwd) {
+			options.cwd = cwd;
+		}
+		execSync("git rev-parse --git-dir", options);
 		return true;
 	} catch {
 		return false;
@@ -187,23 +191,37 @@ export function getWorktreeDisplayName(worktree: GitWorktree): string {
 	return worktree.branch;
 }
 
-export function createWorktree(branchName: string): string {
+export function createWorktree(branchName: string, cwd?: string): string {
 	// Get the git directory
-	const gitDir = execSync("git rev-parse --git-dir", {
+	const gitDirOptions: { encoding: "utf8"; cwd?: string } = {
 		encoding: "utf8",
-	}).trim();
+	};
+	if (cwd) {
+		gitDirOptions.cwd = cwd;
+	}
+	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
 	// Create path under .git/worktrees/
 	const worktreePath = path.join(gitDir, "worktrees", branchName);
 
 	try {
 		// Create the worktree with a new branch
-		execSync(`git worktree add -b ${branchName} "${worktreePath}"`, {
+		const worktreeOptions: { encoding: "utf8"; cwd?: string } = {
 			encoding: "utf8",
-		});
+		};
+		if (cwd) {
+			worktreeOptions.cwd = cwd;
+		}
+		execSync(
+			`git worktree add -b ${branchName} "${worktreePath}"`,
+			worktreeOptions,
+		);
 
 		// Get the absolute path of the created worktree
-		const absolutePath = path.resolve(worktreePath);
+		// If we have a cwd, resolve relative to it
+		const absolutePath = cwd
+			? path.resolve(cwd, worktreePath)
+			: path.resolve(worktreePath);
 		return absolutePath;
 	} catch (error) {
 		throw new Error(
@@ -254,16 +272,18 @@ export interface GitRef {
 	type: "branch" | "tag";
 }
 
-export function getBranchesAndTags(): GitRef[] {
+export function getBranchesAndTags(cwd?: string): GitRef[] {
 	try {
 		const refs: GitRef[] = [];
+		const options: { encoding: "utf8"; cwd?: string } = { encoding: "utf8" };
+		if (cwd) {
+			options.cwd = cwd;
+		}
 
 		// Get all branches
 		const branchesOutput = execSync(
 			"git branch -a --format='%(refname:short)'",
-			{
-				encoding: "utf8",
-			},
+			options,
 		);
 		const branches = branchesOutput.trim().split("\n").filter(Boolean);
 		for (const branch of branches) {
@@ -274,9 +294,7 @@ export function getBranchesAndTags(): GitRef[] {
 		}
 
 		// Get all tags
-		const tagsOutput = execSync("git tag -l", {
-			encoding: "utf8",
-		});
+		const tagsOutput = execSync("git tag -l", options);
 		const tags = tagsOutput.trim().split("\n").filter(Boolean);
 		for (const tag of tags) {
 			refs.push({ name: tag, type: "tag" });
@@ -291,26 +309,38 @@ export function getBranchesAndTags(): GitRef[] {
 export function createWorktreeFromRef(
 	branchName: string,
 	baseBranch: string,
+	cwd?: string,
 ): string {
 	// Get the git directory
-	const gitDir = execSync("git rev-parse --git-dir", {
+	const gitDirOptions: { encoding: "utf8"; cwd?: string } = {
 		encoding: "utf8",
-	}).trim();
+	};
+	if (cwd) {
+		gitDirOptions.cwd = cwd;
+	}
+	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
 	// Create path under .git/worktrees/
 	const worktreePath = path.join(gitDir, "worktrees", branchName);
 
 	try {
 		// Create the worktree with a new branch based on the specified ref
+		const worktreeOptions: { encoding: "utf8"; cwd?: string } = {
+			encoding: "utf8",
+		};
+		if (cwd) {
+			worktreeOptions.cwd = cwd;
+		}
 		execSync(
 			`git worktree add -b ${branchName} "${worktreePath}" ${baseBranch}`,
-			{
-				encoding: "utf8",
-			},
+			worktreeOptions,
 		);
 
 		// Get the absolute path of the created worktree
-		const absolutePath = path.resolve(worktreePath);
+		// If we have a cwd, resolve relative to it
+		const absolutePath = cwd
+			? path.resolve(cwd, worktreePath)
+			: path.resolve(worktreePath);
 		return absolutePath;
 	} catch (error) {
 		throw new Error(

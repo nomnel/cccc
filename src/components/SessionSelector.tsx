@@ -2,6 +2,7 @@ import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import * as path from "node:path";
 import * as React from "react";
+import { listRepositories } from "../utils/configUtils.js";
 import {
 	type GitRef,
 	type GitWorktree,
@@ -13,17 +14,35 @@ import {
 	isGitRepo,
 } from "../utils/gitUtils.js";
 
+// Type for repository with its worktrees
+interface RepositoryWorktrees {
+	repositoryPath: string;
+	repositoryName: string;
+	worktrees: GitWorktree[];
+	branchesAndTags: GitRef[];
+}
+
 interface SessionSelectorProps {
-	onSelectNewBranch: (branchName: string) => void;
-	onSelectNewBranchFromRef: (branchName: string, baseBranch: string) => void;
+	onSelectNewBranch: (branchName: string, repositoryPath: string) => void;
+	onSelectNewBranchFromRef: (
+		branchName: string,
+		baseBranch: string,
+		repositoryPath: string,
+	) => void;
 	onSelectWorktree: (worktreePath: string) => void;
 	onBack: () => void;
 }
 
 type MenuOption =
-	| { type: "create-new" }
-	| { type: "create-new-from" }
-	| { type: "worktree"; worktree: GitWorktree }
+	| { type: "repo-header"; repositoryName: string }
+	| { type: "create-new"; repositoryPath: string; repositoryName: string }
+	| { type: "create-new-from"; repositoryPath: string; repositoryName: string }
+	| {
+			type: "worktree";
+			worktree: GitWorktree;
+			repositoryPath: string;
+			repositoryName: string;
+	  }
 	| { type: "back" };
 
 type BranchSelectionMode =
@@ -39,8 +58,9 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	onBack,
 }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
-	const [worktrees, setWorktrees] = React.useState<GitWorktree[]>([]);
-	const [branchesAndTags, setBranchesAndTags] = React.useState<GitRef[]>([]);
+	const [repositories, setRepositories] = React.useState<RepositoryWorktrees[]>(
+		[],
+	);
 	const [error, setError] = React.useState<string | null>(null);
 	const [loading, setLoading] = React.useState(true);
 	const [branchMode, setBranchMode] =
@@ -51,66 +71,139 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 		string | null
 	>(null);
 	const [branchError, setBranchError] = React.useState<string | null>(null);
-	const [repoName, setRepoName] = React.useState<string | null>(null);
+	const [selectedRepository, setSelectedRepository] = React.useState<
+		string | null
+	>(null);
+	const [availableBranchesAndTags, setAvailableBranchesAndTags] =
+		React.useState<GitRef[]>([]);
 
-	// Load worktrees on mount
+	// Load repositories and their worktrees on mount
 	React.useEffect(() => {
-		const loadWorktrees = async () => {
+		const loadRepositories = async () => {
+			const originalCwd = process.cwd();
+
 			try {
 				setLoading(true);
 				setError(null);
 
-				// Check if we're in a git repository
-				if (!isGitRepo()) {
-					setError("Not in a git repository");
+				const configuredRepos = listRepositories();
+				if (configuredRepos.length === 0) {
+					setError(
+						"No repositories configured. Run 'cccc add <path>' to add a repository.",
+					);
 					return;
 				}
 
-				// Get git root to ensure we're working from the right location
-				const gitRoot = getGitRoot();
-				if (!gitRoot) {
-					setError("Could not find git repository root");
-					return;
+				const repos: RepositoryWorktrees[] = [];
+
+				for (const repo of configuredRepos) {
+					try {
+						// Change to repository directory
+						process.chdir(repo.path);
+
+						// Check if it's a valid git repository
+						if (!isGitRepo(repo.path)) {
+							continue;
+						}
+
+						// Get git root
+						const gitRoot = getGitRoot();
+						if (!gitRoot) {
+							continue;
+						}
+
+						// Get repository name
+						const repositoryName =
+							getRepositoryName(gitRoot) || path.basename(repo.path);
+
+						// Get worktrees
+						const worktrees = getWorktrees(gitRoot);
+
+						// Get branches and tags
+						const branchesAndTags = getBranchesAndTags(repo.path);
+
+						repos.push({
+							repositoryPath: repo.path,
+							repositoryName,
+							worktrees,
+							branchesAndTags,
+						});
+					} catch (err) {
+						// Repository is invalid or inaccessible, skip it
+					}
 				}
 
-				// Get repository name
-				const repositoryName = getRepositoryName(gitRoot);
-				setRepoName(repositoryName);
-
-				// Get all worktrees
-				const foundWorktrees = getWorktrees(gitRoot);
-				setWorktrees(foundWorktrees);
-
-				// Get branches and tags
-				const refs = getBranchesAndTags();
-				setBranchesAndTags(refs);
+				if (repos.length === 0) {
+					setError("No valid git repositories found");
+				} else {
+					setRepositories(repos);
+				}
 			} catch (err) {
 				setError(
-					err instanceof Error ? err.message : "Failed to load worktrees",
+					err instanceof Error ? err.message : "Failed to load repositories",
 				);
 			} finally {
 				setLoading(false);
+				// Always restore the original working directory
+				process.chdir(originalCwd);
 			}
 		};
 
-		loadWorktrees();
+		loadRepositories();
 	}, []);
 
 	// Build options array
 	const options = React.useMemo((): MenuOption[] => {
-		const result: MenuOption[] = [
-			{ type: "create-new" },
-			{ type: "create-new-from" },
-		];
+		const result: MenuOption[] = [];
 
-		// Add separator (visual only, not selectable)
-		for (const worktree of worktrees) {
-			result.push({ type: "worktree", worktree });
+		// Add options for each repository
+		for (const repo of repositories) {
+			// Add repository header
+			result.push({ type: "repo-header", repositoryName: repo.repositoryName });
+
+			// Add create options for this repository
+			result.push(
+				{
+					type: "create-new",
+					repositoryPath: repo.repositoryPath,
+					repositoryName: repo.repositoryName,
+				},
+				{
+					type: "create-new-from",
+					repositoryPath: repo.repositoryPath,
+					repositoryName: repo.repositoryName,
+				},
+			);
+
+			// Add worktrees for this repository
+			for (const worktree of repo.worktrees) {
+				result.push({
+					type: "worktree",
+					worktree,
+					repositoryPath: repo.repositoryPath,
+					repositoryName: repo.repositoryName,
+				});
+			}
 		}
 
 		result.push({ type: "back" });
 		return result;
-	}, [worktrees]);
+	}, [repositories]);
+
+	// Skip repo headers when navigating - calculate this always to maintain hook order
+	const actualSelectedIndex = React.useMemo(() => {
+		let selectableIndex = 0;
+		for (let i = 0; i < options.length; i++) {
+			const option = options[i];
+			if (option && option.type !== "repo-header") {
+				if (selectableIndex === selectedIndex) {
+					return i;
+				}
+				selectableIndex++;
+			}
+		}
+		return 0;
+	}, [selectedIndex, options]);
 
 	const handleBranchSubmit = (value: string) => {
 		const trimmedValue = value.trim();
@@ -129,11 +222,19 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			return;
 		}
 
-		if (branchMode === "create-new") {
-			onSelectNewBranch(trimmedValue);
-		} else if (branchMode === "create-new-from" && selectedBaseBranch) {
+		if (branchMode === "create-new" && selectedRepository) {
+			onSelectNewBranch(trimmedValue, selectedRepository);
+		} else if (
+			branchMode === "create-new-from" &&
+			selectedBaseBranch &&
+			selectedRepository
+		) {
 			// Create branch from the selected base
-			onSelectNewBranchFromRef(trimmedValue, selectedBaseBranch);
+			onSelectNewBranchFromRef(
+				trimmedValue,
+				selectedBaseBranch,
+				selectedRepository,
+			);
 		}
 	};
 
@@ -159,16 +260,16 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 		if (branchMode === "select-base") {
 			if (key.upArrow || (key.ctrl && input === "p")) {
 				setSelectedBaseIndex((prev) =>
-					prev > 0 ? prev - 1 : branchesAndTags.length - 1,
+					prev > 0 ? prev - 1 : availableBranchesAndTags.length - 1,
 				);
 			}
 			if (key.downArrow || (key.ctrl && input === "n")) {
 				setSelectedBaseIndex((prev) =>
-					prev < branchesAndTags.length - 1 ? prev + 1 : 0,
+					prev < availableBranchesAndTags.length - 1 ? prev + 1 : 0,
 				);
 			}
-			if (key.return && branchesAndTags[selectedBaseIndex]) {
-				const baseBranch = branchesAndTags[selectedBaseIndex].name;
+			if (key.return && availableBranchesAndTags[selectedBaseIndex]) {
+				const baseBranch = availableBranchesAndTags[selectedBaseIndex].name;
 				setSelectedBaseBranch(baseBranch);
 				setBranchMode("create-new-from");
 			}
@@ -180,22 +281,38 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 			return;
 		}
 
+		const selectableOptions = options.filter(
+			(opt) => opt.type !== "repo-header",
+		);
 		if (key.upArrow || (key.ctrl && input === "p")) {
-			setSelectedIndex((prev) => (prev > 0 ? prev - 1 : options.length - 1));
+			setSelectedIndex((prev) =>
+				prev > 0 ? prev - 1 : selectableOptions.length - 1,
+			);
 		}
 		if (key.downArrow || (key.ctrl && input === "n")) {
-			setSelectedIndex((prev) => (prev < options.length - 1 ? prev + 1 : 0));
+			setSelectedIndex((prev) =>
+				prev < selectableOptions.length - 1 ? prev + 1 : 0,
+			);
 		}
 		if (key.return) {
-			const option = options[selectedIndex];
+			const option = selectableOptions[selectedIndex];
 			if (!option) return;
 
 			if (option.type === "create-new") {
+				setSelectedRepository(option.repositoryPath);
 				setBranchMode("create-new");
 			} else if (option.type === "create-new-from") {
+				setSelectedRepository(option.repositoryPath);
+				// Find and set the branches/tags for the selected repository
+				const repo = repositories.find(
+					(r) => r.repositoryPath === option.repositoryPath,
+				);
+				if (repo) {
+					setAvailableBranchesAndTags(repo.branchesAndTags);
+				}
 				setBranchMode("select-base");
 				setSelectedBaseIndex(0);
-			} else if (option.type === "worktree" && "worktree" in option) {
+			} else if (option.type === "worktree") {
 				onSelectWorktree(option.worktree.path);
 			} else if (option.type === "back") {
 				onBack();
@@ -257,7 +374,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 					Select base branch or tag
 				</Text>
 				<Text> </Text>
-				{branchesAndTags.map((ref, index) => {
+				{availableBranchesAndTags.map((ref, index) => {
 					const isSelected = selectedBaseIndex === index;
 					return (
 						<Box key={`${ref.type}-${ref.name}`}>
@@ -307,14 +424,27 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 
 	return (
 		<Box flexDirection="column">
-			<Text color="gray">Select a branch or tag to checkout</Text>
+			<Text color="gray">Select a repository and branch/worktree</Text>
 			<Text> </Text>
 			{options.map((option, index) => {
-				const isSelected = selectedIndex === index;
+				const isSelected = actualSelectedIndex === index;
+
+				if (option.type === "repo-header") {
+					return (
+						<Box
+							key={`header-${option.repositoryName}`}
+							marginTop={index > 0 ? 1 : 0}
+						>
+							<Text bold color="blue">
+								{option.repositoryName}
+							</Text>
+						</Box>
+					);
+				}
 
 				if (option.type === "create-new") {
 					return (
-						<Box key="create-new">
+						<Box key={`create-new-${option.repositoryPath}`} marginLeft={2}>
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
 								<Text bold>+</Text> Create new branch...
@@ -325,7 +455,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 
 				if (option.type === "create-new-from") {
 					return (
-						<Box key="create-new-from">
+						<Box
+							key={`create-new-from-${option.repositoryPath}`}
+							marginLeft={2}
+						>
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
 								<Text bold>+</Text> Create new branch from...
@@ -335,40 +468,15 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 				}
 
 				if (option.type === "worktree") {
-					const isFirstWorktree = index === 2; // After create-new and create-new-from
 					const branchName = getWorktreeDisplayName(option.worktree);
-					const gitRoot = getGitRoot();
-					const isMainWorktree = gitRoot === option.worktree.path;
-
-					// Format display based on whether it's main worktree or not
-					let displayText = "";
-					if (isMainWorktree) {
-						// Main repository: repoName:branchName
-						displayText = repoName ? `${repoName}:${branchName}` : branchName;
-					} else {
-						// Git worktree: repoName/worktreeDirName:branchName
-						const worktreeDirName = path.basename(option.worktree.path);
-						displayText = repoName
-							? `${repoName}/${worktreeDirName}:${branchName}`
-							: `${worktreeDirName}:${branchName}`;
-					}
+					const displayText = `${option.repositoryName}:${branchName}`;
 
 					return (
-						<Box key={option.worktree.path} flexDirection="column">
-							{isFirstWorktree && (
-								<Box>
-									<Text> </Text>
-									<Text color="gray" dimColor>
-										worktrees
-									</Text>
-								</Box>
-							)}
-							<Box>
-								<Text color={isSelected ? "green" : undefined}>
-									{isSelected ? "▶ " : "  "}
-									<Text color="gray">📁</Text> {displayText}
-								</Text>
-							</Box>
+						<Box key={option.worktree.path} marginLeft={2}>
+							<Text color={isSelected ? "green" : undefined}>
+								{isSelected ? "▶ " : "  "}
+								<Text color="gray">📁</Text> {displayText}
+							</Text>
 						</Box>
 					);
 				}
