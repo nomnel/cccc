@@ -6,6 +6,7 @@ import { listRepositories } from "../utils/configUtils.js";
 import {
 	type GitRef,
 	type GitWorktree,
+	formatWorktreeDisplayName,
 	getBranchesAndTags,
 	getGitRoot,
 	getRepositoryName,
@@ -447,7 +448,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						<Box key={`create-new-${option.repositoryPath}`} marginLeft={2}>
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
-								<Text bold>+</Text> Create new branch...
+								<Text bold>+</Text> Create new worktree...
 							</Text>
 						</Box>
 					);
@@ -461,7 +462,7 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						>
 							<Text color={isSelected ? "green" : undefined}>
 								{isSelected ? "▶ " : "  "}
-								<Text bold>+</Text> Create new branch from...
+								<Text bold>+</Text> Create new worktree from...
 							</Text>
 						</Box>
 					);
@@ -469,7 +470,12 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 
 				if (option.type === "worktree") {
 					const branchName = getWorktreeDisplayName(option.worktree);
-					const displayText = `${option.repositoryName}:${branchName}`;
+					const displayText = formatWorktreeDisplayName(
+						option.repositoryName,
+						branchName,
+						option.worktree.path,
+						option.repositoryPath,
+					);
 
 					return (
 						<Box key={option.worktree.path} marginLeft={2}>

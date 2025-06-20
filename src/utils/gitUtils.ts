@@ -361,6 +361,66 @@ export function getCurrentBranch(workingDirectory?: string): string | null {
 	}
 }
 
+/**
+ * Get the main worktree path (git root) for a given directory
+ * Returns null if not in a git repository
+ */
+export function getMainWorktreePath(workingDirectory?: string): string | null {
+	try {
+		const options = workingDirectory
+			? { encoding: "utf8" as const, cwd: workingDirectory }
+			: { encoding: "utf8" as const };
+
+		// Get the common git directory (this points to the main worktree's .git)
+		const gitCommonDir = execSync(
+			"git rev-parse --git-common-dir",
+			options,
+		).trim();
+
+		// If it ends with .git, remove it to get the main worktree path
+		if (gitCommonDir.endsWith("/.git")) {
+			return gitCommonDir.slice(0, -5);
+		}
+
+		// For bare repositories or other cases, try to get the main worktree from worktree list
+		const worktreeList = execSync(
+			"git worktree list --porcelain",
+			options,
+		).trim();
+		const lines = worktreeList.split("\n");
+
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			if (line && line.startsWith("worktree ")) {
+				const worktreePath = line.substring(9);
+				// Check if next lines indicate this is bare or detached
+				let isBare = false;
+				for (
+					let j = i + 1;
+					j < lines.length;
+					j++
+				) {
+					const nextLine = lines[j];
+					if (!nextLine || nextLine.startsWith("worktree ")) {
+						break;
+					}
+					if (nextLine === "bare") {
+						isBare = true;
+						break;
+					}
+				}
+				if (!isBare) {
+					return worktreePath;
+				}
+			}
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+}
+
 export function getRepositoryName(workingDirectory?: string): string | null {
 	try {
 		const options = workingDirectory
@@ -425,4 +485,46 @@ export function getRepositoryName(workingDirectory?: string): string | null {
 		// We don't want to fallback to directory name if it's not a git repo
 		return null;
 	}
+}
+
+/**
+ * Format a worktree display name based on whether it's a main worktree or not.
+ * For main worktree: "repositoryName:branchName"
+ * For worktree: "repositoryName/worktree-dir-name:branchName"
+ */
+export function formatWorktreeDisplayName(
+	repositoryName: string,
+	branchName: string,
+	worktreePath: string,
+	repositoryPath?: string,
+): string {
+	// If repositoryPath is provided, use it to check if it's main worktree
+	if (repositoryPath) {
+		const isMainWorktree = worktreePath === repositoryPath;
+		if (isMainWorktree) {
+			return `${repositoryName}:${branchName}`;
+		}
+		return `${repositoryName}/${path.basename(worktreePath)}:${branchName}`;
+	}
+
+	// If repositoryPath is not provided, get it from git
+	const mainWorktreePath = getMainWorktreePath(worktreePath);
+	if (mainWorktreePath) {
+		const isMainWorktree = worktreePath === mainWorktreePath;
+		if (isMainWorktree) {
+			return `${repositoryName}:${branchName}`;
+		}
+		return `${repositoryName}/${path.basename(worktreePath)}:${branchName}`;
+	}
+
+	// Fallback: if we can't determine from git, assume it's not a worktree
+	// unless it contains common worktree patterns
+	const isGitWorktree = worktreePath.includes("/.git/worktrees/");
+	const isDotWorktree = worktreePath.includes(".worktree/");
+	const isWorktree = isGitWorktree || isDotWorktree;
+
+	if (isWorktree) {
+		return `${repositoryName}/${path.basename(worktreePath)}:${branchName}`;
+	}
+	return `${repositoryName}:${branchName}`;
 }

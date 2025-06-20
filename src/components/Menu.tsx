@@ -3,6 +3,7 @@ import { Box, Text, useInput } from "ink";
 import * as React from "react";
 import { MENU_OPTIONS } from "../constants.js";
 import type { Session } from "../types.js";
+import { formatWorktreeDisplayName } from "../utils/gitUtils.js";
 
 interface MenuProps {
 	onSelect: (option: string) => void;
@@ -93,9 +94,20 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 										? path.basename(session.workingDirectory)
 										: "";
 									const repoDisplay = session.repoName || workingDirDisplay;
-									const branchDisplay = session.branch
-										? `${repoDisplay}/${session.branch}`
-										: repoDisplay;
+
+									// Format display based on whether it's main worktree or not
+									let branchDisplay: string;
+									if (session.branch && session.workingDirectory) {
+										branchDisplay = formatWorktreeDisplayName(
+											repoDisplay,
+											session.branch,
+											session.workingDirectory,
+										);
+									} else if (session.branch) {
+										branchDisplay = `${repoDisplay}:${session.branch}`;
+									} else {
+										branchDisplay = repoDisplay;
+									}
 									return (
 										<>
 											{" "}
@@ -103,8 +115,8 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 											<Text color={statusColor} key={`status-${session.id}`}>
 												{session.status}
 											</Text>
-											] ({timestamp}) {branchDisplay}:
-											{session.settingsName || ""}
+											] ({timestamp}) {branchDisplay}
+											{session.settingsName ? ` [${session.settingsName}]` : ""}
 											{session.preview ? ` - ${session.preview}` : ""}
 										</>
 									);
