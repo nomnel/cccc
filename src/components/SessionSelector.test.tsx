@@ -1,11 +1,17 @@
 import { render } from "ink-testing-library";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as configUtils from "../utils/configUtils.js";
 import * as gitUtils from "../utils/gitUtils.js";
 import { SessionSelector } from "./SessionSelector.js";
 
 // Mock gitUtils
 vi.mock("../utils/gitUtils.js");
+
+// Mock configUtils
+vi.mock("../utils/configUtils.js", () => ({
+	listRepositories: vi.fn(),
+}));
 
 // Mock ink-text-input to avoid ES module issues
 vi.mock("ink-text-input", () => ({
@@ -27,7 +33,12 @@ describe("SessionSelector", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Mock process.chdir to prevent directory changes during tests
+		vi.spyOn(process, "chdir").mockImplementation(() => {});
 		// Set up default mocks
+		vi.mocked(configUtils.listRepositories).mockReturnValue([
+			{ path: "/path/to/repo" },
+		]);
 		vi.mocked(gitUtils.isGitRepo).mockReturnValue(true);
 		vi.mocked(gitUtils.getGitRoot).mockReturnValue("/path/to/repo");
 		vi.mocked(gitUtils.getRepositoryName).mockReturnValue("test-repo");
@@ -36,6 +47,20 @@ describe("SessionSelector", () => {
 		// Mock getWorktreeDisplayName to return the branch name
 		vi.mocked(gitUtils.getWorktreeDisplayName).mockImplementation(
 			(worktree) => worktree.branch || "",
+		);
+		// Mock formatWorktreeDisplayName
+		vi.mocked(gitUtils.formatWorktreeDisplayName).mockImplementation(
+			(repoName, branchName, worktreePath, repoPath) => {
+				if (repoPath && worktreePath === repoPath) {
+					return `${repoName}:${branchName}`;
+				}
+				// Check if it's a worktree based on path
+				if (worktreePath.includes("-feature")) {
+					const worktreeName = worktreePath.split("/").pop();
+					return `${repoName}/${worktreeName}:${branchName}`;
+				}
+				return `${repoName}:${branchName}`;
+			},
 		);
 	});
 
@@ -46,20 +71,20 @@ describe("SessionSelector", () => {
 		});
 
 		it("should display error when not in a git repository", async () => {
-			vi.mocked(gitUtils.isGitRepo).mockReturnValue(false);
+			vi.mocked(configUtils.listRepositories).mockReturnValue([]);
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Not in a git repository");
+				expect(lastFrame()).toContain("No repositories configured");
 			});
 		});
 
 		it("should display error when git root cannot be found", async () => {
-			vi.mocked(gitUtils.getGitRoot).mockReturnValue(null);
+			vi.mocked(gitUtils.isGitRepo).mockReturnValue(false);
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Could not find git repository root");
+				expect(lastFrame()).toContain("No valid git repositories found");
 			});
 		});
 	});
@@ -87,8 +112,8 @@ describe("SessionSelector", () => {
 
 			await vi.waitFor(() => {
 				const frame = lastFrame();
-				expect(frame).toContain("Create new branch...");
-				expect(frame).toContain("Create new branch from...");
+				expect(frame).toContain("Create new worktree...");
+				expect(frame).toContain("Create new worktree from...");
 				expect(frame).toContain("test-repo:main");
 				expect(frame).toContain("test-repo/repo-feature:feature-branch");
 				expect(frame).toContain("← Back to main menu");
@@ -127,7 +152,7 @@ describe("SessionSelector", () => {
 				if (!frame) return;
 				const lines = frame.split("\n");
 				const selectedLine = lines.find((line) => line.includes("▶"));
-				expect(selectedLine).toContain("Create new branch from...");
+				expect(selectedLine).toContain("Create new worktree from...");
 			});
 		});
 	});
@@ -139,7 +164,7 @@ describe("SessionSelector", () => {
 			);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Create new branch...");
+				expect(lastFrame()).toContain("Create new worktree...");
 			});
 
 			// Select "Create new branch..."
@@ -162,7 +187,7 @@ describe("SessionSelector", () => {
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Create new branch from...");
+				expect(lastFrame()).toContain("Create new worktree from...");
 			});
 
 			// Note: Since we're mocking TextInput, we can't test the full flow
@@ -176,7 +201,7 @@ describe("SessionSelector", () => {
 			);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Create new branch...");
+				expect(lastFrame()).toContain("Create new worktree...");
 			});
 
 			// Enter create mode
@@ -190,7 +215,7 @@ describe("SessionSelector", () => {
 			stdin.write("\x1B");
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Create new branch...");
+				expect(lastFrame()).toContain("Create new worktree...");
 				expect(lastFrame()).not.toContain("Create New Branch and Worktree");
 			});
 		});
@@ -229,7 +254,7 @@ describe("SessionSelector", () => {
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("Failed to get worktrees");
+				expect(lastFrame()).toContain("No valid git repositories found");
 			});
 		});
 	});
@@ -247,11 +272,17 @@ describe("SessionSelector", () => {
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
+				// The main worktree should be displayed as "my-project:main"
+				expect(lastFrame()).toContain("📁");
 				expect(lastFrame()).toContain("my-project:main");
 			});
 		});
 
 		it("should format worktree display correctly", async () => {
+			// Override the mock for this test to show worktree format
+			vi.mocked(gitUtils.formatWorktreeDisplayName).mockReturnValue(
+				"my-project/my-project-feature:feature/new-ui",
+			);
 			vi.mocked(gitUtils.getWorktrees).mockReturnValue([
 				{
 					path: "/path/to/my-project-feature",
@@ -269,7 +300,7 @@ describe("SessionSelector", () => {
 			});
 		});
 
-		it("should show worktrees separator", async () => {
+		it("should show worktree icon", async () => {
 			vi.mocked(gitUtils.getWorktrees).mockReturnValue([
 				{
 					path: "/path/to/repo",
@@ -280,7 +311,8 @@ describe("SessionSelector", () => {
 			const { lastFrame } = render(<SessionSelector {...defaultProps} />);
 
 			await vi.waitFor(() => {
-				expect(lastFrame()).toContain("worktrees");
+				// Check for the folder icon which indicates a worktree
+				expect(lastFrame()).toContain("📁");
 			});
 		});
 	});
