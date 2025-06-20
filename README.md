@@ -29,6 +29,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 
 ### Settings Management
 - **Auto-discovery**: Finds `settings.*.json` files in `~/.claude/` and `./.claude/`
+- **Repository-specific Settings**: Displays both global and repository-specific settings during session creation
 - **Settings Selection**: Choose settings file when creating new sessions
 - **Environment Integration**: Passes settings via `CLAUDE_SETTINGS_PATH`
 
@@ -139,7 +140,7 @@ Each session in the menu shows:
    - Select "start" from main menu
    - Choose repository from the list
    - Enter branch name (e.g., `feature/new-feature`)
-   - Creates worktree in `../feature-new-feature/`
+   - Creates worktree in `.git/works/feature/new-feature/`
    - Starts Claude session in new worktree
 
 3. **Use Existing Worktree**:
