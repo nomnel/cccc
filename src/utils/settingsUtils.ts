@@ -60,18 +60,25 @@ const findSettingsInDirectory = (
 export const findSettingsFiles = (currentDir?: string): SettingsFile[] => {
 	const settingsFiles: SettingsFile[] = [];
 
-	// Search in ~/.claude/
-	const home = homedir();
-	const homeClaudeDir = path.join(home, ".claude");
-	settingsFiles.push(...findSettingsInDirectory(homeClaudeDir, "home"));
-
-	// Search in ./.claude/ (current directory)
+	// Search in ./.claude/ (current directory) first
 	const cwd = currentDir || process.cwd();
 	const localClaudeDir = path.join(cwd, ".claude");
-	// Only add if it's different from home directory
+	const home = homedir();
+	const homeClaudeDir = path.join(home, ".claude");
+
+	// Only add local settings if it's different from home directory
 	if (localClaudeDir !== homeClaudeDir) {
-		settingsFiles.push(...findSettingsInDirectory(localClaudeDir, "local"));
+		const localSettings = findSettingsInDirectory(localClaudeDir, "local");
+		// Sort local settings alphabetically by filename
+		localSettings.sort((a, b) => a.filename.localeCompare(b.filename));
+		settingsFiles.push(...localSettings);
 	}
+
+	// Then add home settings
+	const homeSettings = findSettingsInDirectory(homeClaudeDir, "home");
+	// Sort home settings alphabetically by filename
+	homeSettings.sort((a, b) => a.filename.localeCompare(b.filename));
+	settingsFiles.push(...homeSettings);
 
 	return settingsFiles;
 };
