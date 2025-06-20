@@ -141,10 +141,7 @@ export async function deleteAllWorktrees(): Promise<{
 		for (const worktree of worktreesToDelete) {
 			try {
 				const status = await getWorktreeStatus(worktree.path);
-				await deleteWorktree(
-					worktree.path,
-					status.hasUncommittedChanges,
-				);
+				await deleteWorktree(worktree.path, status.hasUncommittedChanges);
 				results.deleted.push(worktree.path);
 			} catch (error) {
 				results.errors.push(
@@ -212,8 +209,8 @@ export function createWorktree(branchName: string, cwd?: string): string {
 	}
 	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
-	// Create path under .git/worktrees/
-	const worktreePath = path.join(gitDir, "worktrees", branchName);
+	// Create path under .git/works/
+	const worktreePath = path.join(gitDir, "works", branchName);
 
 	try {
 		// Create the worktree with a new branch
@@ -335,8 +332,8 @@ export function createWorktreeFromRef(
 	}
 	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
-	// Create path under .git/worktrees/
-	const worktreePath = path.join(gitDir, "worktrees", branchName);
+	// Create path under .git/works/
+	const worktreePath = path.join(gitDir, "works", branchName);
 
 	try {
 		// Create the worktree with a new branch based on the specified ref
@@ -371,8 +368,7 @@ export function getCurrentBranch(workingDirectory?: string): string | null {
 		const options = workingDirectory
 			? { encoding: "utf8" as const, cwd: workingDirectory }
 			: { encoding: "utf8" as const };
-		const branch = execSync("git rev-parse --abbrev-ref HEAD", options)
-			.trim();
+		const branch = execSync("git rev-parse --abbrev-ref HEAD", options).trim();
 		return branch === "HEAD" ? "(detached HEAD)" : branch;
 	} catch {
 		return null;
@@ -533,7 +529,7 @@ export function formatWorktreeDisplayName(
 
 	// Fallback: if we can't determine from git, assume it's not a worktree
 	// unless it contains common worktree patterns
-	const isGitWorktree = worktreePath.includes("/.git/worktrees/");
+	const isGitWorktree = worktreePath.includes("/.git/works/");
 	const isDotWorktree = worktreePath.includes(".worktree/");
 	const isWorktree = isGitWorktree || isDotWorktree;
 
