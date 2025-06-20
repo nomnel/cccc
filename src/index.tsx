@@ -214,7 +214,7 @@ const App: React.FC = () => {
 	const handleWorktreeSelect = React.useCallback(
 		(worktreePath: string) => {
 			// Check for settings files in ~/.claude/ and ./.claude/
-			const settings = findSettingsFiles();
+			const settings = findSettingsFiles(worktreePath);
 
 			if (settings.length > 0) {
 				// Settings found, show selector
@@ -248,7 +248,7 @@ const App: React.FC = () => {
 			setPendingRepository(repositoryPath);
 
 			// Check for settings files in ~/.claude/ and ./.claude/
-			const settings = findSettingsFiles();
+			const settings = findSettingsFiles(repositoryPath);
 
 			if (settings.length > 0) {
 				// Settings found, show selector
@@ -296,7 +296,7 @@ const App: React.FC = () => {
 			setPendingRepository(repositoryPath);
 
 			// Check for settings files in ~/.claude/ and ./.claude/
-			const settings = findSettingsFiles();
+			const settings = findSettingsFiles(repositoryPath);
 
 			if (settings.length > 0) {
 				// Settings found, show selector

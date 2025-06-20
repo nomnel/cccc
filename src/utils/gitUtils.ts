@@ -70,7 +70,9 @@ export async function getWorktreesAsync(): Promise<Worktree[]> {
 		return worktrees;
 	} catch (error) {
 		throw new Error(
-			`Failed to get worktrees: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to get worktrees: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
 		);
 	}
 }
@@ -114,7 +116,9 @@ export async function deleteWorktree(
 		await execAsync(command);
 	} catch (error) {
 		throw new Error(
-			`Failed to delete worktree: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to delete worktree: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
 		);
 	}
 }
@@ -137,11 +141,16 @@ export async function deleteAllWorktrees(): Promise<{
 		for (const worktree of worktreesToDelete) {
 			try {
 				const status = await getWorktreeStatus(worktree.path);
-				await deleteWorktree(worktree.path, status.hasUncommittedChanges);
+				await deleteWorktree(
+					worktree.path,
+					status.hasUncommittedChanges,
+				);
 				results.deleted.push(worktree.path);
 			} catch (error) {
 				results.errors.push(
-					`${worktree.path}: ${error instanceof Error ? error.message : String(error)}`,
+					`${worktree.path}: ${
+						error instanceof Error ? error.message : String(error)
+					}`,
 				);
 			}
 		}
@@ -149,7 +158,9 @@ export async function deleteAllWorktrees(): Promise<{
 		return results;
 	} catch (error) {
 		throw new Error(
-			`Failed to delete all worktrees: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to delete all worktrees: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
 		);
 	}
 }
@@ -225,7 +236,9 @@ export function createWorktree(branchName: string, cwd?: string): string {
 		return absolutePath;
 	} catch (error) {
 		throw new Error(
-			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to create worktree: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
 		);
 	}
 }
@@ -275,7 +288,9 @@ export interface GitRef {
 export function getBranchesAndTags(cwd?: string): GitRef[] {
 	try {
 		const refs: GitRef[] = [];
-		const options: { encoding: "utf8"; cwd?: string } = { encoding: "utf8" };
+		const options: { encoding: "utf8"; cwd?: string } = {
+			encoding: "utf8",
+		};
 		if (cwd) {
 			options.cwd = cwd;
 		}
@@ -344,7 +359,9 @@ export function createWorktreeFromRef(
 		return absolutePath;
 	} catch (error) {
 		throw new Error(
-			`Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+			`Failed to create worktree: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
 		);
 	}
 }
@@ -354,7 +371,8 @@ export function getCurrentBranch(workingDirectory?: string): string | null {
 		const options = workingDirectory
 			? { encoding: "utf8" as const, cwd: workingDirectory }
 			: { encoding: "utf8" as const };
-		const branch = execSync("git rev-parse --abbrev-ref HEAD", options).trim();
+		const branch = execSync("git rev-parse --abbrev-ref HEAD", options)
+			.trim();
 		return branch === "HEAD" ? "(detached HEAD)" : branch;
 	} catch {
 		return null;
@@ -391,15 +409,11 @@ export function getMainWorktreePath(workingDirectory?: string): string | null {
 
 		for (let i = 0; i < lines.length; i++) {
 			const line = lines[i];
-			if (line && line.startsWith("worktree ")) {
+			if (line?.startsWith("worktree ")) {
 				const worktreePath = line.substring(9);
 				// Check if next lines indicate this is bare or detached
 				let isBare = false;
-				for (
-					let j = i + 1;
-					j < lines.length;
-					j++
-				) {
+				for (let j = i + 1; j < lines.length; j++) {
 					const nextLine = lines[j];
 					if (!nextLine || nextLine.startsWith("worktree ")) {
 						break;

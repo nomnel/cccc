@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -8,49 +9,69 @@ import {
 } from "./settingsUtils.js";
 
 describe("settingsUtils", () => {
-	const testDir = path.join(process.cwd(), "test-settings-utils");
-	const mockHomeDir = path.join(testDir, "mock-home");
-	const claudeDir = path.join(mockHomeDir, ".claude");
+	// Use a subdirectory in the actual home directory for testing
+	const testSubDir = `.claude-test-${Date.now()}`;
+	const testHomeClaudeDir = path.join(homedir(), testSubDir);
+	const originalClaudeDir = path.join(homedir(), ".claude");
+	const backupDir = path.join(homedir(), `.claude-backup-${Date.now()}`);
+	let hadOriginalClaudeDir = false;
 
 	beforeEach(() => {
-		// Create test directory structure
-		mkdirSync(claudeDir, { recursive: true });
+		// Backup existing ~/.claude if it exists
+		hadOriginalClaudeDir = existsSync(originalClaudeDir);
+		if (hadOriginalClaudeDir) {
+			mkdirSync(backupDir, { recursive: true });
+			// Move the original directory to backup
+			require("node:fs").renameSync(originalClaudeDir, backupDir);
+		}
+
+		// Create test .claude directory
+		mkdirSync(originalClaudeDir, { recursive: true });
 
 		// Create various settings files
 		writeFileSync(
-			path.join(claudeDir, "settings.dev.json"),
+			path.join(originalClaudeDir, "settings.dev.json"),
 			JSON.stringify({ name: "Development" }),
 		);
 		writeFileSync(
-			path.join(claudeDir, "settings.prod.json"),
+			path.join(originalClaudeDir, "settings.prod.json"),
 			JSON.stringify({ name: "Production" }),
 		);
 		writeFileSync(
-			path.join(claudeDir, "settings.test.json"),
+			path.join(originalClaudeDir, "settings.test.json"),
 			JSON.stringify({ name: "Testing" }),
 		);
 		// Create a file that shouldn't match
 		writeFileSync(
-			path.join(claudeDir, "settings.json"),
+			path.join(originalClaudeDir, "settings.json"),
 			JSON.stringify({ name: "Default" }),
 		);
 		writeFileSync(
-			path.join(claudeDir, "config.json"),
+			path.join(originalClaudeDir, "config.json"),
 			JSON.stringify({ name: "Config" }),
 		);
 	});
 
 	afterEach(() => {
 		// Clean up test directory
-		rmSync(testDir, { recursive: true, force: true });
+		if (existsSync(originalClaudeDir)) {
+			rmSync(originalClaudeDir, { recursive: true, force: true });
+		}
+
+		// Restore original ~/.claude if it existed
+		if (hadOriginalClaudeDir && existsSync(backupDir)) {
+			require("node:fs").renameSync(backupDir, originalClaudeDir);
+		}
+
+		// Clean up backup dir if it still exists
+		if (existsSync(backupDir)) {
+			rmSync(backupDir, { recursive: true, force: true });
+		}
 	});
 
 	describe("findSettingsFiles", () => {
 		it("should find all settings.*.json files in ~/.claude/", () => {
-			const settings = findSettingsFiles(
-				mockHomeDir,
-				path.join(testDir, "different-dir"),
-			);
+			const settings = findSettingsFiles("/some/different/dir");
 			expect(settings).toHaveLength(3);
 
 			const names = settings.map((s) => s.name).sort();
@@ -65,10 +86,7 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include settings.json without a name part", () => {
-			const settings = findSettingsFiles(
-				mockHomeDir,
-				path.join(testDir, "different-dir"),
-			);
+			const settings = findSettingsFiles("/some/different/dir");
 			const hasDefaultSettings = settings.some(
 				(s) => s.filename === "settings.json",
 			);
@@ -76,35 +94,26 @@ describe("settingsUtils", () => {
 		});
 
 		it("should not include non-settings files", () => {
-			const settings = findSettingsFiles(
-				mockHomeDir,
-				path.join(testDir, "different-dir"),
-			);
+			const settings = findSettingsFiles("/some/different/dir");
 			const hasConfigFile = settings.some((s) => s.filename === "config.json");
 			expect(hasConfigFile).toBe(false);
 		});
 
 		it("should handle missing ~/.claude directory", () => {
-			rmSync(claudeDir, { recursive: true });
-			const settings = findSettingsFiles(
-				mockHomeDir,
-				path.join(testDir, "different-dir"),
-			);
+			rmSync(originalClaudeDir, { recursive: true });
+			const settings = findSettingsFiles("/some/different/dir");
 			expect(settings).toHaveLength(0);
 		});
 
 		it("should ignore directories", () => {
-			mkdirSync(path.join(claudeDir, "settings.subdir.json"));
-			const settings = findSettingsFiles(
-				mockHomeDir,
-				path.join(testDir, "different-dir"),
-			);
+			mkdirSync(path.join(originalClaudeDir, "settings.subdir.json"));
+			const settings = findSettingsFiles("/some/different/dir");
 			expect(settings).toHaveLength(3); // Still only the 3 files
 		});
 
 		it("should find settings in both home and local directories", () => {
 			// Create local .claude directory with settings
-			const localDir = path.join(testDir, "local-project");
+			const localDir = path.join(process.cwd(), `test-local-${Date.now()}`);
 			const localClaudeDir = path.join(localDir, ".claude");
 			mkdirSync(localClaudeDir, { recursive: true });
 
@@ -113,27 +122,36 @@ describe("settingsUtils", () => {
 				JSON.stringify({ name: "Local Development" }),
 			);
 
-			const settings = findSettingsFiles(mockHomeDir, localDir);
-			expect(settings).toHaveLength(4); // 3 from home + 1 from local
+			try {
+				const settings = findSettingsFiles(localDir);
+				expect(settings).toHaveLength(4); // 3 from home + 1 from local
 
-			// Check that sources are correctly assigned
-			const homeSetting = settings.find((s) => s.name === "dev");
-			const localSetting = settings.find((s) => s.name === "local-dev");
+				// Check that sources are correctly assigned
+				const homeSetting = settings.find((s) => s.name === "dev");
+				const localSetting = settings.find((s) => s.name === "local-dev");
 
-			expect(homeSetting?.source).toBe("home");
-			expect(localSetting?.source).toBe("local");
+				expect(homeSetting?.source).toBe("home");
+				expect(localSetting?.source).toBe("local");
+			} finally {
+				// Clean up local test directory
+				rmSync(localDir, { recursive: true, force: true });
+			}
 		});
 	});
 
 	describe("copySettingsToWorktree", () => {
-		const worktreeDir = path.join(testDir, "worktree");
+		const worktreeDir = path.join(process.cwd(), `test-worktree-${Date.now()}`);
 
 		beforeEach(() => {
 			mkdirSync(worktreeDir, { recursive: true });
 		});
 
+		afterEach(() => {
+			rmSync(worktreeDir, { recursive: true, force: true });
+		});
+
 		it("should copy settings file to worktree as settings.local.json", () => {
-			const sourcePath = path.join(claudeDir, "settings.dev.json");
+			const sourcePath = path.join(originalClaudeDir, "settings.dev.json");
 			const targetPath = copySettingsToWorktree(sourcePath, worktreeDir);
 
 			expect(targetPath).toBe(
@@ -148,7 +166,7 @@ describe("settingsUtils", () => {
 		});
 
 		it("should create .claude directory if it doesn't exist", () => {
-			const sourcePath = path.join(claudeDir, "settings.prod.json");
+			const sourcePath = path.join(originalClaudeDir, "settings.prod.json");
 			const claudeWorktreeDir = path.join(worktreeDir, ".claude");
 
 			expect(existsSync(claudeWorktreeDir)).toBe(false);
@@ -165,7 +183,7 @@ describe("settingsUtils", () => {
 			writeFileSync(targetPath, JSON.stringify({ old: "data" }));
 
 			// Copy new file
-			const sourcePath = path.join(claudeDir, "settings.test.json");
+			const sourcePath = path.join(originalClaudeDir, "settings.test.json");
 			copySettingsToWorktree(sourcePath, worktreeDir);
 
 			// Verify new content

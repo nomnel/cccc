@@ -57,14 +57,11 @@ const findSettingsInDirectory = (
 /**
  * Find all settings.*.json files in ~/.claude/ and ./.claude/ directories
  */
-export const findSettingsFiles = (
-	homeDir?: string,
-	currentDir?: string,
-): SettingsFile[] => {
+export const findSettingsFiles = (currentDir?: string): SettingsFile[] => {
 	const settingsFiles: SettingsFile[] = [];
 
 	// Search in ~/.claude/
-	const home = homeDir || homedir();
+	const home = homedir();
 	const homeClaudeDir = path.join(home, ".claude");
 	settingsFiles.push(...findSettingsInDirectory(homeClaudeDir, "home"));
 
