@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/@nomnel%2Fcccc.svg)](https://www.npmjs.com/package/@nomnel/cccc)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A terminal UI wrapper for Claude CLI that enables efficient management of multiple Claude sessions with Git worktree integration. Perfect for developers who need to work on multiple branches simultaneously with Claude's assistance.
+A terminal UI wrapper for Claude CLI that enables efficient management of multiple Claude sessions across multiple Git repositories with worktree integration. Perfect for developers who need to work on multiple projects and branches simultaneously with Claude's assistance.
 
 ## Features
 
@@ -14,9 +14,14 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 - **Session Preview**: Displays last 200 characters of meaningful output
 - **Activity Timestamps**: Shows relative time since last activity (e.g., "5m ago")
 
+### Multi-Repository Support
+- **Multiple Repositories**: Manage Claude sessions across different Git repositories
+- **Repository Management**: Add, remove, and list repositories via CLI
+- **Unified View**: See all repositories and their worktrees in one place
+
 ### Git Worktree Integration
 - **Worktree Selection**: Start sessions in existing Git worktrees
-- **Branch Creation**: Create new branches with worktrees in one step
+- **Branch Creation**: Create new branches with worktrees in any configured repository
 - **Worktree Manager**: View, manage, and delete Git worktrees
   - Status indicators (clean/modified/untracked)
   - Safe deletion with confirmation
@@ -63,17 +68,27 @@ pnpm run build
 
 ## Usage
 
-After installation, start the application with:
+### Command Line Interface
 
 ```bash
+# Start the interactive UI
 cccc
+
+# Manage repositories
+cccc add <path>      # Add a repository to configuration
+cccc remove <repo>   # Remove a repository
+cccc list           # List all configured repositories
 ```
+
+### Interactive UI
+
+After running `cccc` without arguments, you'll enter the interactive terminal UI:
 
 ### Main Menu
 
 The main menu shows:
 - Create new session (with optional worktree/settings)
-- Select Git worktree for new session
+- Select Git worktree for new session (across all configured repositories)
 - Manage Git worktrees
 - Resume existing sessions (shows status and preview)
 - Exit (terminates all sessions)
@@ -97,8 +112,8 @@ The main menu shows:
 
 1. **Main Menu**: Session list and options
 2. **Claude Session**: Active Claude CLI interface
-3. **Worktree Selection**: Choose from existing Git worktrees
-4. **Branch Input**: Create new branch with worktree
+3. **Repository/Worktree Selection**: Choose from repositories and their worktrees
+4. **Branch Input**: Create new branch with worktree in selected repository
 5. **Settings Selection**: Choose from available settings files
 6. **Worktree Manager**: View and manage Git worktrees
 
@@ -111,20 +126,29 @@ Each session in the menu shows:
 - Last activity timestamp
 - Preview of recent output (filtered for readability)
 
-### Git Worktree Workflow
+### Multi-Repository Workflow
 
-1. **Create New Branch with Worktree**:
+1. **Configure Repositories**:
+   ```bash
+   cccc add ~/projects/repo1    # Add first repository
+   cccc add ~/work/repo2        # Add another repository
+   cccc list                    # View all repositories
+   ```
+
+2. **Create New Branch with Worktree**:
    - Select "start" from main menu
+   - Choose repository from the list
    - Enter branch name (e.g., `feature/new-feature`)
    - Creates worktree in `../feature-new-feature/`
    - Starts Claude session in new worktree
 
-2. **Use Existing Worktree**:
+3. **Use Existing Worktree**:
    - Select "worktree" from main menu
+   - View all repositories and their worktrees
    - Choose from list of existing worktrees
    - Starts Claude session in selected worktree
 
-3. **Manage Worktrees**:
+4. **Manage Worktrees**:
    - Select "manage_worktrees" from main menu
    - View all worktrees with status indicators
    - Press `D` to delete (with confirmation)
@@ -212,13 +236,20 @@ Tests cover:
 
 ```
 src/
-├── constants.ts           # Constants
+├── cli.tsx               # CLI command handler
+├── constants.ts          # Constants
 ├── types.ts              # Type definitions
-├── utils.ts              # Utility functions
+├── utils/                # Utility functions
+│   ├── configUtils.ts    # Repository configuration
+│   ├── gitUtils.ts       # Git operations
+│   └── ...
 ├── hooks/                # Custom hooks
 │   ├── useSessionManager.ts
 │   ├── useEventListeners.ts
 │   └── useTerminalController.ts
+├── components/           # React components
+│   ├── SessionSelector.tsx
+│   └── ...
 ├── Menu.tsx              # Menu component
 ├── index.tsx             # Main application
 └── test/                 # Test files
@@ -250,15 +281,19 @@ src/
    - Ensure [Claude CLI](https://docs.anthropic.com/claude/docs/claude-cli) is installed and in your PATH
 
 2. **Worktree creation fails**
-   - Ensure you're in a Git repository
+   - Ensure the selected repository is a valid Git repository
    - Check that the parent directory is writable
    - Verify the branch name doesn't already exist
 
-3. **Settings file not found**
+3. **"No repositories configured" message**
+   - Add at least one repository using `cccc add <path>`
+   - The current directory is automatically added if it's a Git repository
+
+4. **Settings file not found**
    - Check file naming: `settings.<name>.json`
    - Verify file location: `~/.claude/` or `./.claude/`
 
-4. **Session not responding**
+5. **Session not responding**
    - Press Ctrl+Q to return to menu
    - Session is preserved and can be resumed
 

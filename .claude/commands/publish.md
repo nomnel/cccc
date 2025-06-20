@@ -1,6 +1,6 @@
 # Publish to npm
 
-Update the package version and publish to npm with proper git tagging.
+Update the package version, documentation, and publish to npm with proper git tagging.
 
 ## Usage
 ```
@@ -16,23 +16,28 @@ Update the package version and publish to npm with proper git tagging.
 
 2. Update the version in package.json to the version specified in $ARGUMENTS
 
-3. Commit the version change:
+3. Update documentation files:
+   - Update README.md with any new features or changes since the last version
+   - Update CLAUDE.md if there are any architectural or development workflow changes
+   - Review recent commits to identify what needs to be documented
+
+4. Commit all changes:
    ```bash
-   git add package.json
-   git commit -m "chore: bump version to $ARGUMENTS"
+   git add package.json README.md CLAUDE.md
+   git commit -m "chore: bump version to $ARGUMENTS and update docs"
    ```
 
-4. Create a git tag for the new version:
+5. Create a git tag for the new version:
    ```bash
    git tag v$ARGUMENTS
    ```
 
-5. Publish the package to npm:
+6. Publish the package to npm:
    ```bash
    npm publish
    ```
 
-6. Push the commit and tag to the remote repository:
+7. Push the commit and tag to the remote repository:
    ```bash
    git push && git push --tags
    ```
