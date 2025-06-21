@@ -10,7 +10,6 @@ export const SCREENS = {
 	MENU: "menu",
 	CLAUDE: "claude",
 	WORKTREE: "worktree",
-	BRANCH_INPUT: "branch_input",
 	SETTINGS_SELECT: "settings_select",
 	WORKTREE_MANAGER: "worktree_manager",
 	SESSION_SELECTOR: "session_selector",

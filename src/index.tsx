@@ -1,7 +1,6 @@
 import path from "node:path";
 import { render, useApp, useInput } from "ink";
 import * as React from "react";
-import { BranchInput } from "./components/BranchInput.js";
 import { Menu } from "./components/Menu.js";
 import { SessionSelector } from "./components/SessionSelector.js";
 import { SettingsSelector } from "./components/SettingsSelector.js";
@@ -38,7 +37,6 @@ const App: React.FC = () => {
 		switchToMenu,
 		switchToSession,
 		switchToWorktree,
-		switchToBranchInput,
 		switchToSettingsSelect,
 		switchToWorktreeManager,
 		switchToSessionSelector,
@@ -268,18 +266,6 @@ const App: React.FC = () => {
 		[launchNewSession, switchToMenu, switchToSettingsSelect],
 	);
 
-	const handleBranchInputBack = React.useCallback(() => {
-		switchToMenu();
-	}, [switchToMenu]);
-
-	// Handler for BranchInput which uses current directory
-	const handleBranchSubmit = React.useCallback(
-		(branchName: string) => {
-			return handleBranchSubmitWithRepo(branchName, process.cwd());
-		},
-		[handleBranchSubmitWithRepo],
-	);
-
 	// Handler for SessionSelector which provides repository path
 	const handleBranchFromRefSubmitWithRepo = React.useCallback(
 		(branchName: string, baseBranch: string, repositoryPath: string) => {
@@ -390,12 +376,8 @@ const App: React.FC = () => {
 		setSettingsFiles([]);
 
 		// Go back to appropriate screen
-		if (pendingBranch) {
-			switchToBranchInput();
-		} else {
-			switchToWorktree();
-		}
-	}, [pendingBranch, switchToBranchInput, switchToWorktree]);
+		switchToWorktree();
+	}, [switchToWorktree]);
 
 	// Render appropriate screen based on current state
 	if (currentScreen === SCREENS.MENU) {
@@ -407,15 +389,6 @@ const App: React.FC = () => {
 			<WorktreeMenu
 				onSelect={handleWorktreeSelect}
 				onBack={handleWorktreeBack}
-			/>
-		);
-	}
-
-	if (currentScreen === SCREENS.BRANCH_INPUT) {
-		return (
-			<BranchInput
-				onSubmit={handleBranchSubmit}
-				onBack={handleBranchInputBack}
 			/>
 		);
 	}

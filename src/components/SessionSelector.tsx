@@ -12,6 +12,7 @@ import {
 	getRepositoryName,
 	getWorktreeDisplayName,
 	getWorktrees,
+	getWorktreePath,
 	isGitRepo,
 } from "../utils/gitUtils.js";
 
@@ -77,6 +78,21 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	>(null);
 	const [availableBranchesAndTags, setAvailableBranchesAndTags] =
 		React.useState<GitRef[]>([]);
+	const [worktreePath, setWorktreePath] = React.useState<string>("");
+
+	// Calculate worktree path when branch name or repository changes
+	React.useEffect(() => {
+		if (branchName && selectedRepository) {
+			try {
+				const path = getWorktreePath(branchName, selectedRepository);
+				setWorktreePath(path);
+			} catch {
+				setWorktreePath("");
+			}
+		} else {
+			setWorktreePath("");
+		}
+	}, [branchName, selectedRepository]);
 
 	// Load repositories and their worktrees on mount
 	React.useEffect(() => {
@@ -356,6 +372,9 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						placeholder="feature/my-new-feature"
 					/>
 				</Box>
+				<Box marginBottom={1}>
+					<Text dimColor>Worktree path: {worktreePath || ""}</Text>
+				</Box>
 				{branchError && (
 					<Box marginBottom={1}>
 						<Text color="red">{branchError}</Text>
@@ -410,6 +429,9 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 						onSubmit={handleBranchSubmit}
 						placeholder="feature/my-new-feature"
 					/>
+				</Box>
+				<Box marginBottom={1}>
+					<Text dimColor>Worktree path: {worktreePath || ""}</Text>
 				</Box>
 				{branchError && (
 					<Box marginBottom={1}>

@@ -4,7 +4,6 @@ export type Screen =
 	| "menu"
 	| "claude"
 	| "worktree"
-	| "branch_input"
 	| "settings_select"
 	| "worktree_manager"
 	| "session_selector";

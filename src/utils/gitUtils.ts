@@ -199,6 +199,26 @@ export function getWorktreeDisplayName(worktree: GitWorktree): string {
 	return worktree.branch;
 }
 
+export function getWorktreePath(branchName: string, cwd?: string): string {
+	// Get the git directory
+	const gitDirOptions: { encoding: "utf8"; cwd?: string } = {
+		encoding: "utf8",
+	};
+	if (cwd) {
+		gitDirOptions.cwd = cwd;
+	}
+	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
+
+	// Generate path under .git/works/
+	const worktreePath = path.join(gitDir, "works", branchName);
+	
+	// Return the absolute path
+	const absolutePath = cwd
+		? path.resolve(cwd, worktreePath)
+		: path.resolve(worktreePath);
+	return absolutePath;
+}
+
 export function createWorktree(branchName: string, cwd?: string): string {
 	// Get the git directory
 	const gitDirOptions: { encoding: "utf8"; cwd?: string } = {

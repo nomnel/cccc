@@ -53,11 +53,6 @@ export const useSessionManager = () => {
 		setCurrentSessionId(null);
 	}, []);
 
-	const switchToBranchInput = React.useCallback(() => {
-		setCurrentScreen("branch_input");
-		setCurrentSessionId(null);
-	}, []);
-
 	const switchToSettingsSelect = React.useCallback(() => {
 		setCurrentScreen("settings_select");
 		setCurrentSessionId(null);
@@ -126,7 +121,6 @@ export const useSessionManager = () => {
 		switchToMenu,
 		switchToSession,
 		switchToWorktree,
-		switchToBranchInput,
 		switchToSettingsSelect,
 		switchToWorktreeManager,
 		switchToSessionSelector,
