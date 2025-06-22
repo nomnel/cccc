@@ -298,6 +298,13 @@ src/
    - Press Ctrl+Q to return to menu
    - Session is preserved and can be resumed
 
+## Changelog
+
+### Version 0.2.2
+- **Fixed**: Branch names containing slashes (e.g., `feature/some-thing`) now create worktrees with sanitized paths (`.git/works/feature_some-thing`) to prevent nested directory creation
+- **Added**: Worktree path preview when creating new branches, showing exactly where the worktree will be created
+- **Fixed**: Settings file display order now correctly prioritizes repository-specific settings over global settings
+
 ## Development
 
 ### Development Commands
