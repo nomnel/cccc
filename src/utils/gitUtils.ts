@@ -209,8 +209,11 @@ export function getWorktreePath(branchName: string, cwd?: string): string {
 	}
 	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
+	// Sanitize branch name to avoid nested directories
+	const sanitizedBranchName = sanitizeBranchNameForPath(branchName);
+
 	// Generate path under .git/works/
-	const worktreePath = path.join(gitDir, "works", branchName);
+	const worktreePath = path.join(gitDir, "works", sanitizedBranchName);
 	
 	// Return the absolute path
 	const absolutePath = cwd
@@ -229,8 +232,11 @@ export function createWorktree(branchName: string, cwd?: string): string {
 	}
 	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
+	// Sanitize branch name to avoid nested directories
+	const sanitizedBranchName = sanitizeBranchNameForPath(branchName);
+
 	// Create path under .git/works/
-	const worktreePath = path.join(gitDir, "works", branchName);
+	const worktreePath = path.join(gitDir, "works", sanitizedBranchName);
 
 	try {
 		// Create the worktree with a new branch
@@ -302,6 +308,15 @@ export interface GitRef {
 	type: "branch" | "tag";
 }
 
+/**
+ * Sanitize branch name for use in worktree path.
+ * Replaces slashes with underscores to avoid creating nested directories.
+ * Example: "feature/some-thing" -> "feature_some-thing"
+ */
+function sanitizeBranchNameForPath(branchName: string): string {
+	return branchName.replace(/\//g, "_");
+}
+
 export function getBranchesAndTags(cwd?: string): GitRef[] {
 	try {
 		const refs: GitRef[] = [];
@@ -352,8 +367,11 @@ export function createWorktreeFromRef(
 	}
 	const gitDir = execSync("git rev-parse --git-dir", gitDirOptions).trim();
 
+	// Sanitize branch name to avoid nested directories
+	const sanitizedBranchName = sanitizeBranchNameForPath(branchName);
+
 	// Create path under .git/works/
-	const worktreePath = path.join(gitDir, "works", branchName);
+	const worktreePath = path.join(gitDir, "works", sanitizedBranchName);
 
 	try {
 		// Create the worktree with a new branch based on the specified ref
