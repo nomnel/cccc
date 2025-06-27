@@ -14,6 +14,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 - **Session Preview**: Displays last 200 characters of meaningful output
 - **Activity Timestamps**: Shows relative time since last activity (e.g., "5m ago")
 - **Exit Confirmation**: Prompts for confirmation when exiting with active sessions
+- **Priority Sorting**: Sessions are sorted by status priority (Awaiting Input > Idle > Running) and age
 
 ### Multi-Repository Support
 - **Multiple Repositories**: Manage Claude sessions across different Git repositories
