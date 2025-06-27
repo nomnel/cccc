@@ -10,6 +10,27 @@ interface MenuProps {
 	sessions: Session[];
 }
 
+// Sort sessions by priority: Awaiting Input > Idle > Running
+// Within same status, sort by oldest lastUpdated first
+const sortSessions = (sessions: Session[]): Session[] => {
+	const statusPriority: Record<Session["status"], number> = {
+		"Awaiting Input": 0,
+		Idle: 1,
+		Running: 2,
+	};
+
+	return [...sessions].sort((a, b) => {
+		// First, sort by status priority
+		const statusDiff = statusPriority[a.status] - statusPriority[b.status];
+		if (statusDiff !== 0) {
+			return statusDiff;
+		}
+
+		// If same status, sort by lastUpdated (oldest first)
+		return a.lastUpdated.getTime() - b.lastUpdated.getTime();
+	});
+};
+
 export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 
@@ -48,7 +69,9 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 			MENU_OPTIONS.START_NEW_SESSION,
 			MENU_OPTIONS.MANAGE_WORKTREES,
 		];
-		for (const session of sessions) {
+		// Sort sessions before adding them to the menu
+		const sortedSessions = sortSessions(sessions);
+		for (const session of sortedSessions) {
 			result.push(session.id);
 		}
 		result.push(MENU_OPTIONS.EXIT);
