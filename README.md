@@ -13,6 +13,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 - **Status Tracking**: Shows "Idle", "Running", or "Awaiting Input" status
 - **Session Preview**: Displays last 200 characters of meaningful output
 - **Activity Timestamps**: Shows relative time since last activity (e.g., "5m ago")
+- **Exit Confirmation**: Prompts for confirmation when exiting with active sessions
 
 ### Multi-Repository Support
 - **Multiple Repositories**: Manage Claude sessions across different Git repositories
