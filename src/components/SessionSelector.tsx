@@ -1,6 +1,6 @@
+import * as path from "node:path";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
-import * as path from "node:path";
 import * as React from "react";
 import { listRepositories } from "../utils/configUtils.js";
 import {
@@ -11,8 +11,8 @@ import {
 	getGitRoot,
 	getRepositoryName,
 	getWorktreeDisplayName,
-	getWorktrees,
 	getWorktreePath,
+	getWorktrees,
 	isGitRepo,
 } from "../utils/gitUtils.js";
 

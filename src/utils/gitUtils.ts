@@ -214,7 +214,7 @@ export function getWorktreePath(branchName: string, cwd?: string): string {
 
 	// Generate path under .git/works/
 	const worktreePath = path.join(gitDir, "works", sanitizedBranchName);
-	
+
 	// Return the absolute path
 	const absolutePath = cwd
 		? path.resolve(cwd, worktreePath)

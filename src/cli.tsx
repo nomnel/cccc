@@ -2,8 +2,8 @@
 
 import {
 	addRepository,
-	removeRepository,
 	listRepositories,
+	removeRepository,
 } from "./utils/configUtils.js";
 
 const args = process.argv.slice(2);
