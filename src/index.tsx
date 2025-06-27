@@ -1,6 +1,7 @@
 import path from "node:path";
 import { render, useApp, useInput } from "ink";
 import * as React from "react";
+import { ExitConfirmation } from "./components/ExitConfirmation.js";
 import { Menu } from "./components/Menu.js";
 import { SessionSelector } from "./components/SessionSelector.js";
 import { SettingsSelector } from "./components/SettingsSelector.js";
@@ -66,6 +67,7 @@ const App: React.FC = () => {
 		string | null
 	>(null);
 	const [settingsFiles, setSettingsFiles] = React.useState<SettingsFile[]>([]);
+	const [showExitConfirmation, setShowExitConfirmation] = React.useState(false);
 
 	// Handle Ctrl+Q to return to menu when in claude screen
 	useInput((input, key) => {
@@ -193,8 +195,13 @@ const App: React.FC = () => {
 			} else if (option === MENU_OPTIONS.MANAGE_WORKTREES) {
 				switchToWorktreeManager();
 			} else if (option === MENU_OPTIONS.EXIT) {
-				killAllSessions();
-				exit();
+				if (sessions.length > 0) {
+					// Show confirmation dialog if there are active sessions
+					setShowExitConfirmation(true);
+				} else {
+					// No sessions, exit directly
+					exit();
+				}
 			} else if (!isMenuOption(option)) {
 				// It's a session ID
 				switchToExistingSession(option);
@@ -203,9 +210,9 @@ const App: React.FC = () => {
 		[
 			switchToSessionSelector,
 			switchToWorktreeManager,
-			killAllSessions,
 			exit,
 			switchToExistingSession,
+			sessions,
 		],
 	);
 
@@ -379,7 +386,26 @@ const App: React.FC = () => {
 		switchToWorktree();
 	}, [switchToWorktree]);
 
+	const handleExitConfirm = React.useCallback(() => {
+		killAllSessions();
+		exit();
+	}, [killAllSessions, exit]);
+
+	const handleExitCancel = React.useCallback(() => {
+		setShowExitConfirmation(false);
+	}, []);
+
 	// Render appropriate screen based on current state
+	if (showExitConfirmation) {
+		return (
+			<ExitConfirmation
+				sessionCount={sessions.length}
+				onConfirm={handleExitConfirm}
+				onCancel={handleExitCancel}
+			/>
+		);
+	}
+
 	if (currentScreen === SCREENS.MENU) {
 		return <Menu onSelect={handleSelect} sessions={sessions} />;
 	}
