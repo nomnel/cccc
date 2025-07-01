@@ -14,8 +14,18 @@ vi.mock("../utils/configUtils.js", () => ({
 }));
 
 // Mock ink-text-input to avoid ES module issues
+interface MockTextInputProps {
+	value?: string;
+	onChange?: (value: string) => void;
+	onSubmit?: (value: string) => void;
+	placeholder?: string;
+}
+let mockTextInputProps: MockTextInputProps = {};
 vi.mock("ink-text-input", () => ({
-	default: vi.fn(() => null),
+	default: vi.fn((props: MockTextInputProps) => {
+		mockTextInputProps = props;
+		return null;
+	}),
 }));
 
 describe("SessionSelector", () => {
@@ -62,6 +72,8 @@ describe("SessionSelector", () => {
 				return `${repoName}:${branchName}`;
 			},
 		);
+		// Mock getWorktreePath
+		vi.mocked(gitUtils.getWorktreePath).mockReturnValue("/path/to/repo-branch");
 	});
 
 	describe("initial state", () => {
@@ -177,6 +189,55 @@ describe("SessionSelector", () => {
 			});
 		});
 
+		it("should show auto-generation hint in create new branch mode", async () => {
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
+
+			await vi.waitFor(() => {
+				expect(lastFrame()).toContain("Create new worktree...");
+			});
+
+			// Select "Create new branch..."
+			stdin.write("\r"); // Enter key
+
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("empty for auto-generated name");
+			});
+		});
+
+		it("should auto-generate branch name when empty", async () => {
+			const { stdin } = render(<SessionSelector {...defaultProps} />);
+
+			await vi.waitFor(() => {
+				// Wait for menu to load
+			});
+
+			// Select "Create new branch..."
+			stdin.write("\r"); // Enter key
+
+			await vi.waitFor(() => {
+				// Wait for branch input mode
+			});
+
+			// Mock the date to ensure consistent branch name
+			const mockDate = new Date("2024-12-25T15:30:45");
+			vi.setSystemTime(mockDate);
+
+			// Simulate submitting empty value
+			mockTextInputProps.onSubmit?.("");
+
+			await vi.waitFor(() => {
+				expect(mockOnSelectNewBranch).toHaveBeenCalledWith(
+					"branch-20241225-153045",
+					"/path/to/repo",
+				);
+			});
+
+			vi.useRealTimers();
+		});
+
 		it("should show branch/tag options when needed", async () => {
 			vi.mocked(gitUtils.getBranchesAndTags).mockReturnValue([
 				{ type: "branch", name: "main" },
@@ -218,6 +279,102 @@ describe("SessionSelector", () => {
 				expect(lastFrame()).toContain("Create new worktree...");
 				expect(lastFrame()).not.toContain("Create New Branch and Worktree");
 			});
+		});
+
+		it("should show auto-generation hint in create new branch from mode", async () => {
+			vi.mocked(gitUtils.getBranchesAndTags).mockReturnValue([
+				{ type: "branch", name: "main" },
+				{ type: "branch", name: "develop" },
+			]);
+
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
+
+			// Wait for initial menu
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Create new worktree from...");
+			});
+
+			// Navigate down once to move to "Create new worktree from..."
+			// (starts at "Create new worktree...", needs to go down one)
+			stdin.write("\x1B[B"); // Down arrow
+
+			// Wait a bit for the navigation to register
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// Select it
+			stdin.write("\r");
+
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Select base branch or tag");
+			});
+
+			// Select main branch
+			stdin.write("\r");
+
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Create New Branch from: main");
+				expect(frame).toContain("empty for auto-generated name");
+			});
+		});
+
+		it("should auto-generate branch name when empty in create from mode", async () => {
+			vi.mocked(gitUtils.getBranchesAndTags).mockReturnValue([
+				{ type: "branch", name: "main" },
+			]);
+
+			const { stdin, lastFrame } = render(
+				<SessionSelector {...defaultProps} />,
+			);
+
+			// Wait for initial menu
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Create new worktree from...");
+			});
+
+			// Navigate down once to move to "Create new worktree from..."
+			stdin.write("\x1B[B"); // Down arrow
+
+			// Wait a bit for the navigation to register
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			// Select it
+			stdin.write("\r"); // Enter key
+
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Select base branch or tag");
+			});
+
+			// Select main branch
+			stdin.write("\r");
+
+			await vi.waitFor(() => {
+				const frame = lastFrame();
+				expect(frame).toContain("Create New Branch from: main");
+			});
+
+			// Mock the date to ensure consistent branch name
+			const mockDate = new Date("2024-12-25T15:30:45");
+			vi.setSystemTime(mockDate);
+
+			// Simulate submitting empty value
+			mockTextInputProps.onSubmit?.("");
+
+			await vi.waitFor(() => {
+				expect(mockOnSelectNewBranchFromRef).toHaveBeenCalledWith(
+					"branch-20241225-153045",
+					"main",
+					"/path/to/repo",
+				);
+			});
+
+			vi.useRealTimers();
 		});
 	});
 

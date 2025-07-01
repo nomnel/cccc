@@ -223,11 +223,18 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 	}, [selectedIndex, options]);
 
 	const handleBranchSubmit = (value: string) => {
-		const trimmedValue = value.trim();
+		let trimmedValue = value.trim();
 
+		// Generate timestamp-based branch name if empty
 		if (!trimmedValue) {
-			setBranchError("Branch name cannot be empty");
-			return;
+			const now = new Date();
+			const year = now.getFullYear();
+			const month = String(now.getMonth() + 1).padStart(2, "0");
+			const day = String(now.getDate()).padStart(2, "0");
+			const hours = String(now.getHours()).padStart(2, "0");
+			const minutes = String(now.getMinutes()).padStart(2, "0");
+			const seconds = String(now.getSeconds()).padStart(2, "0");
+			trimmedValue = `branch-${year}${month}${day}-${hours}${minutes}${seconds}`;
 		}
 
 		// Basic validation for branch name
@@ -381,7 +388,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 					</Box>
 				)}
 				<Box marginTop={1}>
-					<Text dimColor>Press Enter to create • Press Escape to go back</Text>
+					<Text dimColor>
+						Press Enter to create (empty for auto-generated name) • Press Escape
+						to go back
+					</Text>
 				</Box>
 			</Box>
 		);
@@ -439,7 +449,10 @@ export const SessionSelector: React.FC<SessionSelectorProps> = ({
 					</Box>
 				)}
 				<Box marginTop={1}>
-					<Text dimColor>Press Enter to create • Press Escape to go back</Text>
+					<Text dimColor>
+						Press Enter to create (empty for auto-generated name) • Press Escape
+						to go back
+					</Text>
 				</Box>
 			</Box>
 		);
