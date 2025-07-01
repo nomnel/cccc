@@ -24,6 +24,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 ### Git Worktree Integration
 - **Worktree Selection**: Start sessions in existing Git worktrees
 - **Branch Creation**: Create new branches with worktrees in any configured repository
+- **Automatic Branch Naming**: Press Enter with empty branch name to auto-generate timestamp-based names (e.g., `branch-20240701-142530`)
 - **Worktree Manager**: View, manage, and delete Git worktrees
   - Status indicators (clean/modified/untracked)
   - Safe deletion with confirmation
