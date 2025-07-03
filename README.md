@@ -19,6 +19,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 ### Multi-Repository Support
 - **Multiple Repositories**: Manage Claude sessions across different Git repositories
 - **Repository Management**: Add, remove, and list repositories via CLI
+- **Auto-Registration**: Current Git repository is automatically added when launching cccc (v0.2.6+)
 - **Unified View**: See all repositories and their worktrees in one place
 
 ### Git Worktree Integration
@@ -291,7 +292,7 @@ src/
 
 3. **"No repositories configured" message**
    - Add at least one repository using `cccc add <path>`
-   - The current directory is automatically added if it's a Git repository
+   - The current directory is automatically added if it's a Git repository (since v0.2.6)
 
 4. **Settings file not found**
    - Check file naming: `settings.<name>.json`
@@ -302,6 +303,16 @@ src/
    - Session is preserved and can be resumed
 
 ## Changelog
+
+### Version 0.2.6
+- **Added**: Automatic repository registration - when launching `cccc` from a Git repository that isn't managed yet, it's automatically added to cccc management
+
+### Version 0.2.5
+- **Added**: Automatic branch name generation - press Enter with empty branch name to generate timestamp-based names
+
+### Version 0.2.4
+- **Added**: Session priority sorting - sessions are now sorted by status (Awaiting Input > Idle > Running) and age
+- **Added**: Exit confirmation dialog when active sessions exist
 
 ### Version 0.2.2
 - **Fixed**: Branch names containing slashes (e.g., `feature/some-thing`) now create worktrees with sanitized paths (`.git/works/feature_some-thing`) to prevent nested directory creation

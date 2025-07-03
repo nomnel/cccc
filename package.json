@@ -1,6 +1,6 @@
 {
 	"name": "@nomnel/cccc",
-	"version": "0.2.5",
+	"version": "0.2.6",
 	"description": "Claude Code Control Center - Terminal UI wrapper for Claude CLI",
 	"main": "dist/index.js",
 	"type": "module",
