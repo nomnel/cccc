@@ -304,6 +304,9 @@ src/
 
 ## Changelog
 
+### Version 0.2.7
+- **Removed**: Built-in notification feature in favor of Claude Code hooks - users can now configure notifications through Claude Code's hooks system for more flexibility
+
 ### Version 0.2.6
 - **Added**: Automatic repository registration - when launching `cccc` from a Git repository that isn't managed yet, it's automatically added to cccc management
 
