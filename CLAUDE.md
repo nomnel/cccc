@@ -65,13 +65,11 @@ The project includes custom slash commands for Claude:
 - `node-pty`: Creates pseudo-terminal processes for running Claude CLI
 - `strip-ansi`: Handles ANSI escape sequences in terminal output
 - `ink-text-input`: Provides text input component for terminal UI
-- `node-notifier`: macOS notifications for session status changes
 - Testing: Vitest with @testing-library/react and ink-testing-library
 
 ### Key Modules
 - `configUtils`: Manages repository configuration in `~/.config/cccc/settings.json`
 - `gitUtils`: Git operations with support for multiple repositories
-- `notificationUtils`: System notifications for session events
 
 ### Code Style
 - Uses Biome for formatting and linting with tab indentation
@@ -97,8 +95,7 @@ src/
 │   └── useTerminalController.ts
 └── utils/               # Utility functions
     ├── configUtils.ts   # Repository configuration
-    ├── gitUtils.ts      # Git operations
-    └── notificationUtils.ts # System notifications
+    └── gitUtils.ts      # Git operations
 .claude/
 └── commands/            # Custom Claude commands
     └── publish.md       # npm publish workflow

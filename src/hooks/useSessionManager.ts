@@ -1,7 +1,6 @@
 import * as React from "react";
 import { SESSION_PREFIX } from "../constants.js";
 import type { Screen, Session } from "../types.js";
-import { sendSessionStatusNotification } from "../utils/notificationUtils.js";
 import { getSessionPreview, getSessionStatus } from "../utils/sessionUtils.js";
 
 export const useSessionManager = () => {
@@ -83,17 +82,8 @@ export const useSessionManager = () => {
 			setSessions((prev) =>
 				prev.map((session) => {
 					if (session.id === sessionId) {
-						const previousStatus = session.status;
 						const newOutputs = [...session.outputs, output];
 						const newStatus = getSessionStatus(newOutputs);
-
-						// Check for status transition from Running to Idle or Awaiting Input
-						if (
-							previousStatus === "Running" &&
-							(newStatus === "Idle" || newStatus === "Awaiting Input")
-						) {
-							sendSessionStatusNotification(session, newStatus);
-						}
 
 						return {
 							...session,
