@@ -37,6 +37,8 @@ const App: React.FC = () => {
 		sessions,
 		currentScreen,
 		currentSessionId,
+		error,
+		setError,
 		generateSessionId,
 		addSession,
 		removeSession,
@@ -60,6 +62,18 @@ const App: React.FC = () => {
 		setupActiveSessionListeners,
 	} = useTerminalController();
 	const { exit } = useApp();
+	
+	// Use refs to get the latest values in callbacks
+	const screenRef = React.useRef(currentScreen);
+	const sessionIdRef = React.useRef(currentSessionId);
+	
+	React.useEffect(() => {
+		screenRef.current = currentScreen;
+	}, [currentScreen]);
+	
+	React.useEffect(() => {
+		sessionIdRef.current = currentSessionId;
+	}, [currentSessionId]);
 
 	// State for pending worktree and settings selection
 	const [pendingWorktree, setPendingWorktree] = React.useState<string | null>(
@@ -103,18 +117,23 @@ const App: React.FC = () => {
 
 			clearScreen();
 
-			// Create environment with settings path if provided
-			const env = settingsPath
-				? { CLAUDE_SETTINGS_PATH: settingsPath }
-				: undefined;
-			const tmuxSession = createTmuxProcess(sessionId, args, workingDirectory, env);
+			try {
+				// Create environment with settings path if provided
+				const env = settingsPath
+					? { CLAUDE_SETTINGS_PATH: settingsPath }
+					: undefined;
+				const tmuxSession = createTmuxProcess(sessionId, args, workingDirectory, env);
 
 			// Set up persistent data listener that always captures output
 			const dataDisposable = setupPersistentDataListener(
 				tmuxSession,
-				(data) => appendOutput(sessionId, Buffer.from(data)),
-				() =>
-					currentScreen === SCREENS.CLAUDE && currentSessionId === sessionId,
+				(data) => {
+					appendOutput(sessionId, Buffer.from(data));
+				},
+				() => {
+					const isActive = screenRef.current === SCREENS.CLAUDE && sessionIdRef.current === sessionId;
+					return isActive;
+				},
 			);
 
 			// Set up exit handler by polling tmux session status
@@ -153,6 +172,13 @@ const App: React.FC = () => {
 			};
 			addSession(newSession);
 			switchToSession(sessionId);
+			} catch (error) {
+				// Display error to user and return to menu
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				setError(errorMessage);
+				clearScreen();
+				switchToMenu();
+			}
 		},
 		[
 			generateSessionId,
@@ -166,8 +192,6 @@ const App: React.FC = () => {
 			switchToSession,
 			switchToMenu,
 			appendOutput,
-			currentScreen,
-			currentSessionId,
 		],
 	);
 
@@ -417,7 +441,7 @@ const App: React.FC = () => {
 	}
 
 	if (currentScreen === SCREENS.MENU) {
-		return <Menu onSelect={handleSelect} sessions={sessions} />;
+		return <Menu onSelect={handleSelect} sessions={sessions} error={error} />;
 	}
 
 	if (currentScreen === SCREENS.WORKTREE) {

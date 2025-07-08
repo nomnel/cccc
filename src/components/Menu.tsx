@@ -8,6 +8,7 @@ import { formatWorktreeDisplayName } from "../utils/gitUtils.js";
 interface MenuProps {
 	onSelect: (option: string) => void;
 	sessions: Session[];
+	error?: string | null;
 }
 
 // Sort sessions by priority: Awaiting Input > Idle > Running
@@ -31,7 +32,7 @@ const sortSessions = (sessions: Session[]): Session[] => {
 	});
 };
 
-export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
+export const Menu: React.FC<MenuProps> = ({ onSelect, sessions, error }) => {
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 
 	// Get display text for menu options
@@ -95,6 +96,11 @@ export const Menu: React.FC<MenuProps> = ({ onSelect, sessions }) => {
 
 	return (
 		<Box flexDirection="column">
+			{error && (
+				<Box marginBottom={1}>
+					<Text color="red">Error: {error}</Text>
+				</Box>
+			)}
 			{options.map((option, index) => (
 				<Box key={option}>
 					<Text color={selectedIndex === index ? "green" : undefined}>

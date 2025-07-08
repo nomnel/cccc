@@ -41,19 +41,30 @@ export const createTmuxSession = (
 		// Session doesn't exist, which is what we want
 	}
 	
-	// Create environment variable string
-	const envString = Object.entries(env)
-		.map(([key, value]) => `${key}="${value}"`)
-		.join(" ");
-	
 	// Create tmux session with the command
 	try {
-		execSync(
-			`tmux new-session -d -s "${sessionName}" -n "${paneName}" -c "${cwd}" sh -c "${envString} ${command}"`,
-			{ stdio: "pipe" }
-		);
+		const tmuxCommand = `tmux new-session -d -s "${sessionName}" -n "${paneName}" -c "${cwd}" ${command}`;
+		
+		// Execute with environment variables passed through execSync's env option
+		execSync(tmuxCommand, { 
+			stdio: "pipe",
+			env: env,
+		});
 	} catch (error) {
-		throw new Error(`Failed to create tmux session: ${error}`);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		// Check if tmux is installed
+		try {
+			execSync("which tmux", { stdio: "pipe", env });
+		} catch {
+			throw new Error("tmux is not installed. Please install tmux to use this application.");
+		}
+		// Check if the command (claude) exists
+		try {
+			execSync(`which ${command.split(" ")[0]}`, { stdio: "pipe", env });
+		} catch {
+			throw new Error(`Command '${command.split(" ")[0]}' not found. Make sure Claude CLI is installed and in your PATH.`);
+		}
+		throw new Error(`Failed to create tmux session: ${errorMessage}`);
 	}
 	
 	return {
@@ -226,26 +237,45 @@ export const createOutputMonitor = (
 	// Create a FIFO pipe for output
 	const pipePath = `/tmp/tmux-monitor-${session.sessionName}`;
 	try {
+		// Remove old FIFO if it exists
+		execSync(`rm -f "${pipePath}"`, { stdio: "pipe" });
 		execSync(`mkfifo "${pipePath}"`, { stdio: "pipe" });
 	} catch {
-		// Pipe might already exist
+		// Ignore errors
 	}
 	
-	// Start piping tmux output to the FIFO
-	execSync(
-		`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -o "cat > ${pipePath}"`,
-		{ stdio: "pipe" }
-	);
-	
-	// Read from the FIFO
+	// Start the reader first (non-blocking)
 	const monitor = spawn("cat", [pipePath]);
+	
+	// Give the reader a moment to connect to the FIFO
+	setTimeout(() => {
+		// Start piping tmux output to the FIFO
+		try {
+			execSync(
+				`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -o "cat >> ${pipePath}"`,
+				{ stdio: "pipe" }
+			);
+		} catch (error) {
+			// Kill the monitor if pipe-pane fails
+			if (!monitor.killed) {
+				monitor.kill();
+			}
+		}
+	}, 100);
 	
 	monitor.stdout?.on("data", (chunk: Buffer) => {
 		onData(chunk.toString());
 	});
 	
 	monitor.on("error", (error) => {
-		console.error("Output monitor error:", error);
+		// Try to clean up and notify about the error
+		try {
+			execSync(`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`, {
+				stdio: "pipe",
+			});
+		} catch {
+			// Ignore if it fails
+		}
 	});
 	
 	monitor.on("exit", () => {

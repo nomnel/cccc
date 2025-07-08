@@ -10,6 +10,7 @@ export const useSessionManager = () => {
 	const [currentSessionId, setCurrentSessionId] = React.useState<string | null>(
 		null,
 	);
+	const [error, setError] = React.useState<string | null>(null);
 	const sessionCounter = React.useRef(0);
 
 	const generateSessionId = React.useCallback(() => {
@@ -46,6 +47,7 @@ export const useSessionManager = () => {
 	const switchToMenu = React.useCallback(() => {
 		setCurrentScreen("menu");
 		setCurrentSessionId(null);
+		setError(null);
 	}, []);
 
 	const switchToSession = React.useCallback((sessionId: string) => {
@@ -113,6 +115,8 @@ export const useSessionManager = () => {
 		sessions,
 		currentScreen,
 		currentSessionId,
+		error,
+		setError,
 		generateSessionId,
 		addSession,
 		removeSession,
