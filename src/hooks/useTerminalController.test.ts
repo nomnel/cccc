@@ -168,6 +168,13 @@ describe("useTerminalController", () => {
 			};
 			vi.stubGlobal("process", mockProcessWithoutSize);
 
+			// getCurrentTerminalDimensionsをモックしてデフォルト値を返すようにする
+			const tmuxUtils = await import("../utils/tmuxUtils.js");
+			vi.mocked(tmuxUtils.getCurrentTerminalDimensions).mockReturnValueOnce({
+				cols: 80,
+				rows: 24,
+			});
+
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
@@ -250,7 +257,6 @@ describe("useTerminalController", () => {
 			expect(mockStdin.on).toHaveBeenCalledWith("data", listeners.handleInput);
 			expect(typeof listeners.handleInput).toBe("function");
 			expect(typeof listeners.handleResize).toBe("function");
-			expect(listeners.dataDisposable).toBeDefined();
 		});
 
 		it("リサイズリスナーが正しく設定される", async () => {

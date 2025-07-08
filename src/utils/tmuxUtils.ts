@@ -24,6 +24,23 @@ export const createTmuxSession = (
 ): TmuxSession => {
 	const paneName = `${sessionName}-pane`;
 	
+	// Check if session already exists and kill it if it does
+	try {
+		execSync(`tmux has-session -t "${sessionName}" 2>/dev/null`, {
+			stdio: "pipe",
+		});
+		// Session exists, kill it first
+		try {
+			execSync(`tmux kill-session -t "${sessionName}"`, {
+				stdio: "pipe",
+			});
+		} catch {
+			// Ignore errors if kill fails
+		}
+	} catch {
+		// Session doesn't exist, which is what we want
+	}
+	
 	// Create environment variable string
 	const envString = Object.entries(env)
 		.map(([key, value]) => `${key}="${value}"`)
@@ -251,4 +268,32 @@ export const getCurrentTerminalDimensions = (): TmuxDimensions => {
 		cols: process.stdout.columns || 80,
 		rows: process.stdout.rows || 24,
 	};
+};
+
+/**
+ * Clean up any orphaned tmux sessions from previous runs
+ */
+export const cleanupOrphanedSessions = (sessionPrefix: string): void => {
+	try {
+		// List all tmux sessions
+		const sessions = execSync("tmux list-sessions -F '#{session_name}'", {
+			encoding: "utf8",
+			stdio: "pipe",
+		}).trim().split("\n");
+		
+		// Kill any sessions that match our prefix
+		for (const session of sessions) {
+			if (session.startsWith(sessionPrefix)) {
+				try {
+					execSync(`tmux kill-session -t "${session}"`, {
+						stdio: "pipe",
+					});
+				} catch {
+					// Ignore errors if kill fails
+				}
+			}
+		}
+	} catch {
+		// No tmux sessions exist or tmux is not running, which is fine
+	}
 };

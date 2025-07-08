@@ -24,7 +24,9 @@ export const useTerminalController = () => {
 
 	const createTmuxProcess = React.useCallback(
 		(sessionId: string, args: string[] = [], cwd?: string, env?: Record<string, string>) => {
-			const command = `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`;
+			const command = args.length > 0 
+				? `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`
+				: TERMINAL_CONFIG.PROCESS_NAME;
 			const tmuxSession = createTmuxSession(
 				sessionId,
 				command,

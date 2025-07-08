@@ -7,13 +7,13 @@ import { SessionSelector } from "./components/SessionSelector.js";
 import { SettingsSelector } from "./components/SettingsSelector.js";
 import { WorktreeManager } from "./components/WorktreeManager.js";
 import { WorktreeMenu } from "./components/WorktreeMenu.js";
-import { MENU_OPTIONS, SCREENS } from "./constants.js";
+import { MENU_OPTIONS, SCREENS, SESSION_PREFIX } from "./constants.js";
 import { useEventListeners } from "./hooks/useEventListeners.js";
 import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
-import { hasCommandExited, isSessionRunning } from "./utils/tmuxUtils.js";
+import { cleanupOrphanedSessions, hasCommandExited, isSessionRunning } from "./utils/tmuxUtils.js";
 import {
 	createWorktree,
 	createWorktreeFromRef,
@@ -28,6 +28,11 @@ import {
 } from "./utils/settingsUtils.js";
 
 const App: React.FC = () => {
+	// Clean up any orphaned sessions from previous runs on mount
+	React.useEffect(() => {
+		cleanupOrphanedSessions(SESSION_PREFIX);
+	}, []);
+
 	const {
 		sessions,
 		currentScreen,
