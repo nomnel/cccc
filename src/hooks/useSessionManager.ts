@@ -2,6 +2,7 @@ import * as React from "react";
 import { SESSION_PREFIX } from "../constants.js";
 import type { Screen, Session } from "../types.js";
 import { getSessionPreview, getSessionStatus } from "../utils/sessionUtils.js";
+import { killSession } from "../utils/tmuxUtils.js";
 
 export const useSessionManager = () => {
 	const [sessions, setSessions] = React.useState<Session[]>([]);
@@ -23,8 +24,13 @@ export const useSessionManager = () => {
 	const removeSession = React.useCallback((sessionId: string) => {
 		setSessions((prev) => {
 			const sessionToRemove = prev.find((s) => s.id === sessionId);
-			if (sessionToRemove?.dataDisposable) {
-				sessionToRemove.dataDisposable.dispose();
+			if (sessionToRemove) {
+				if (sessionToRemove.dataDisposable) {
+					sessionToRemove.dataDisposable.dispose();
+				}
+				if (sessionToRemove.exitCheckInterval) {
+					clearInterval(sessionToRemove.exitCheckInterval);
+				}
 			}
 			return prev.filter((s) => s.id !== sessionId);
 		});
@@ -72,7 +78,10 @@ export const useSessionManager = () => {
 			if (session.dataDisposable) {
 				session.dataDisposable.dispose();
 			}
-			session.process.kill();
+			if (session.exitCheckInterval) {
+				clearInterval(session.exitCheckInterval);
+			}
+			killSession(session.tmuxSession);
 		}
 		setSessions([]);
 	}, [sessions]);

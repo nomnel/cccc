@@ -1,4 +1,4 @@
-import type pty from "node-pty";
+import type { TmuxSession } from "./utils/tmuxUtils.js";
 
 export type Screen =
 	| "menu"
@@ -10,7 +10,7 @@ export type Screen =
 
 export type Session = {
 	id: string;
-	process: pty.IPty;
+	tmuxSession: TmuxSession;
 	outputs: Buffer[];
 	lastUpdated: Date;
 	status: "Idle" | "Running" | "Awaiting Input";
@@ -21,6 +21,7 @@ export type Session = {
 	settingsPath?: string;
 	settingsName?: string; // Name of the settings file used (e.g., "foo" from "settings.foo.json")
 	dataDisposable?: { dispose: () => void };
+	exitCheckInterval?: NodeJS.Timeout;
 };
 
 export type MenuOption = "start" | "exit" | string;

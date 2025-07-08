@@ -13,6 +13,7 @@ import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
+import { hasCommandExited, isSessionRunning } from "./utils/tmuxUtils.js";
 import {
 	createWorktree,
 	createWorktreeFromRef,
@@ -49,7 +50,7 @@ const App: React.FC = () => {
 		useEventListeners();
 	const {
 		clearScreen,
-		createPtyProcess,
+		createTmuxProcess,
 		setupPersistentDataListener,
 		setupActiveSessionListeners,
 	} = useTerminalController();
@@ -101,26 +102,29 @@ const App: React.FC = () => {
 			const env = settingsPath
 				? { CLAUDE_SETTINGS_PATH: settingsPath }
 				: undefined;
-			const ptyProcess = createPtyProcess(args, workingDirectory, env);
+			const tmuxSession = createTmuxProcess(sessionId, args, workingDirectory, env);
 
 			// Set up persistent data listener that always captures output
 			const dataDisposable = setupPersistentDataListener(
-				ptyProcess,
+				tmuxSession,
 				(data) => appendOutput(sessionId, Buffer.from(data)),
 				() =>
 					currentScreen === SCREENS.CLAUDE && currentSessionId === sessionId,
 			);
 
-			// Set up exit handler
-			ptyProcess.onExit(() => {
-				dataDisposable.dispose();
-				removeSession(sessionId);
-				clearScreen();
-				switchToMenu();
-			});
+			// Set up exit handler by polling tmux session status
+			const checkExitInterval = setInterval(() => {
+				if (!isSessionRunning(tmuxSession) || hasCommandExited(tmuxSession)) {
+					clearInterval(checkExitInterval);
+					dataDisposable.dispose();
+					removeSession(sessionId);
+					clearScreen();
+					switchToMenu();
+				}
+			}, 1000);
 
 			// Set up active session listeners
-			const listeners = setupActiveSessionListeners(ptyProcess);
+			const listeners = setupActiveSessionListeners(tmuxSession);
 			setListeners(listeners);
 
 			// Get the current branch and repository name for this session
@@ -129,7 +133,7 @@ const App: React.FC = () => {
 
 			const newSession: Session = {
 				id: sessionId,
-				process: ptyProcess,
+				tmuxSession,
 				outputs: [],
 				lastUpdated: new Date(),
 				status: "Idle",
@@ -140,6 +144,7 @@ const App: React.FC = () => {
 				settingsPath,
 				settingsName,
 				dataDisposable,
+				exitCheckInterval: checkExitInterval,
 			};
 			addSession(newSession);
 			switchToSession(sessionId);
@@ -147,7 +152,7 @@ const App: React.FC = () => {
 		[
 			generateSessionId,
 			clearScreen,
-			createPtyProcess,
+			createTmuxProcess,
 			setupPersistentDataListener,
 			setupActiveSessionListeners,
 			setListeners,
@@ -176,7 +181,7 @@ const App: React.FC = () => {
 			switchToSession(sessionId);
 
 			// Set up active session listeners only (data listener is already active)
-			const listeners = setupActiveSessionListeners(session.process);
+			const listeners = setupActiveSessionListeners(session.tmuxSession);
 			setListeners(listeners);
 		},
 		[

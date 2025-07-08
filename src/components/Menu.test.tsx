@@ -1,9 +1,9 @@
 import { act, render } from "@testing-library/react";
-import type { IPty } from "node-pty";
 import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MENU_OPTIONS } from "../constants.js";
 import type { Session } from "../types.js";
+import type { TmuxSession } from "../utils/tmuxUtils.js";
 import { Menu } from "./Menu.js";
 
 // Inkのモック
@@ -23,6 +23,13 @@ vi.mock("ink", () => {
 
 describe("Menu", () => {
 	let mockUseInput: ReturnType<typeof vi.fn>;
+	
+	// Mock TmuxSession for all tests
+	const mockTmuxSession: TmuxSession = {
+		sessionName: "test-session",
+		paneName: "test-pane",
+		lastCapturedLine: 0,
+	};
 
 	beforeEach(async () => {
 		vi.clearAllMocks();
@@ -41,7 +48,7 @@ describe("Menu", () => {
 		const sessions: Session[] = [
 			{
 				id: "session-1",
-				process: {} as IPty,
+				tmuxSession: mockTmuxSession,
 				outputs: [],
 				lastUpdated: new Date(),
 				status: "Idle",
@@ -49,7 +56,7 @@ describe("Menu", () => {
 			},
 			{
 				id: "session-2",
-				process: {} as IPty,
+				tmuxSession: mockTmuxSession,
 				outputs: [],
 				lastUpdated: new Date(),
 				status: "Idle",
@@ -119,7 +126,7 @@ describe("Menu", () => {
 			const sessions: Session[] = [
 				{
 					id: "session-1",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -127,7 +134,7 @@ describe("Menu", () => {
 				},
 				{
 					id: "session-2",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -180,7 +187,7 @@ describe("Menu", () => {
 			const sessions: Session[] = [
 				{
 					id: "session-1",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -188,7 +195,7 @@ describe("Menu", () => {
 				},
 				{
 					id: "session-2",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -232,7 +239,7 @@ describe("Menu", () => {
 			const sessions: Session[] = [
 				{
 					id: "session-1",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -339,7 +346,7 @@ describe("Menu", () => {
 			const sessions: Session[] = [
 				{
 					id: "session-1",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -347,7 +354,7 @@ describe("Menu", () => {
 				},
 				{
 					id: "session-2",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -376,7 +383,7 @@ describe("Menu", () => {
 			const mockOnSelect = vi.fn();
 			const sessions: Session[] = Array.from({ length: 10 }, (_, i) => ({
 				id: `session-${i + 1}`,
-				process: {} as IPty,
+				tmuxSession: mockTmuxSession,
 				outputs: [],
 				lastUpdated: new Date(),
 				status: "Idle",
@@ -420,7 +427,7 @@ describe("Menu", () => {
 			const sessions: Session[] = [
 				{
 					id: "session-1",
-					process: {} as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",

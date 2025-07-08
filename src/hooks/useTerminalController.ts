@@ -1,7 +1,14 @@
-import pty from "node-pty";
 import * as React from "react";
 import { TERMINAL_CONFIG } from "../constants.js";
 import type { EventListeners } from "../types.js";
+import {
+	createOutputMonitor,
+	createTmuxSession,
+	getCurrentTerminalDimensions,
+	resizePane,
+	sendInput,
+	type TmuxSession,
+} from "../utils/tmuxUtils.js";
 
 export const useTerminalController = () => {
 	const clearScreen = React.useCallback(() => {
@@ -15,15 +22,21 @@ export const useTerminalController = () => {
 		process.stdin.resume();
 	}, []);
 
-	const createPtyProcess = React.useCallback(
-		(args: string[] = [], cwd?: string, env?: Record<string, string>) => {
-			return pty.spawn(TERMINAL_CONFIG.PROCESS_NAME, args, {
-				name: TERMINAL_CONFIG.XTERM_NAME,
-				cols: process.stdout.columns || TERMINAL_CONFIG.DEFAULT_COLS,
-				rows: process.stdout.rows || TERMINAL_CONFIG.DEFAULT_ROWS,
-				cwd: cwd || process.cwd(),
-				env: { ...process.env, ...env },
-			});
+	const createTmuxProcess = React.useCallback(
+		(sessionId: string, args: string[] = [], cwd?: string, env?: Record<string, string>) => {
+			const command = `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`;
+			const tmuxSession = createTmuxSession(
+				sessionId,
+				command,
+				cwd || process.cwd(),
+				{ ...process.env, ...env } as Record<string, string>,
+			);
+			
+			// Resize to current terminal dimensions
+			const dimensions = getCurrentTerminalDimensions();
+			resizePane(tmuxSession, dimensions);
+			
+			return tmuxSession;
 		},
 		[],
 	);
@@ -31,11 +44,11 @@ export const useTerminalController = () => {
 	// Set up persistent data listener that always captures output
 	const setupPersistentDataListener = React.useCallback(
 		(
-			ptyProcess: pty.IPty,
+			tmuxSession: TmuxSession,
 			onData: (data: string) => void,
 			isActive: () => boolean,
 		) => {
-			return ptyProcess.onData((data) => {
+			const outputMonitor = createOutputMonitor(tmuxSession, (data) => {
 				// Always capture data
 				onData(data);
 				// Only write to stdout if this session is active
@@ -43,16 +56,27 @@ export const useTerminalController = () => {
 					process.stdout.write(data);
 				}
 			});
+			
+			// Store the monitor in the session for cleanup
+			tmuxSession.outputMonitor = outputMonitor;
+			
+			return {
+				dispose: () => {
+					if (outputMonitor && !outputMonitor.killed) {
+						outputMonitor.kill();
+					}
+				},
+			};
 		},
 		[],
 	);
 
 	// Set up input and resize listeners for active session
 	const setupActiveSessionListeners = React.useCallback(
-		(ptyProcess: pty.IPty): EventListeners => {
+		(tmuxSession: TmuxSession): EventListeners => {
 			// Handle input
 			const handleInput = (data: Buffer) => {
-				ptyProcess.write(data.toString());
+				sendInput(tmuxSession, data.toString());
 			};
 
 			setupRawMode();
@@ -61,24 +85,25 @@ export const useTerminalController = () => {
 			// Handle terminal resize
 			const handleResize = () => {
 				if (process.stdout.columns && process.stdout.rows) {
-					ptyProcess.resize(process.stdout.columns, process.stdout.rows);
+					resizePane(tmuxSession, {
+						cols: process.stdout.columns,
+						rows: process.stdout.rows,
+					});
 				}
 			};
 			process.on("SIGWINCH", handleResize);
 
-			// Set up data forwarder for active session
-			const dataDisposable = ptyProcess.onData((data) => {
-				process.stdout.write(data);
-			});
+			// Note: Data forwarding is handled by the persistent listener
+			// No additional disposable needed here
 
-			return { handleInput, handleResize, dataDisposable };
+			return { handleInput, handleResize };
 		},
 		[setupRawMode],
 	);
 
 	return {
 		clearScreen,
-		createPtyProcess,
+		createTmuxProcess,
 		setupPersistentDataListener,
 		setupActiveSessionListeners,
 	};

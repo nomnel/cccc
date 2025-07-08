@@ -1,15 +1,18 @@
 import { act, renderHook } from "@testing-library/react";
-import type { IPty } from "node-pty";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TmuxSession } from "../utils/tmuxUtils.js";
 import { useSessionManager } from "./useSessionManager.js";
 
-// モックプロセスを作成
-const createMockPtyProcess = (): Partial<IPty> => ({
-	kill: vi.fn(),
-	write: vi.fn(),
-	resize: vi.fn(),
-	onData: vi.fn(),
-	onExit: vi.fn(),
+// Mock tmuxUtils
+vi.mock("../utils/tmuxUtils.js", () => ({
+	killSession: vi.fn(),
+}));
+
+// モックTmuxSessionを作成
+const createMockTmuxSession = (name = "test-session"): TmuxSession => ({
+	sessionName: name,
+	paneName: `${name}-pane`,
+	lastCapturedLine: 0,
 });
 
 describe("useSessionManager", () => {
@@ -72,12 +75,12 @@ describe("useSessionManager", () => {
 	describe("セッション追加", () => {
 		it("新しいセッションを追加できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -87,18 +90,18 @@ describe("useSessionManager", () => {
 
 			expect(result.current.sessions).toHaveLength(1);
 			expect(result.current.sessions[0]?.id).toBe("session-1");
-			expect(result.current.sessions[0]?.process).toBe(mockProcess);
+			expect(result.current.sessions[0]?.tmuxSession).toBe(mockTmuxSession);
 		});
 
 		it("複数のセッションを追加できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess1 = createMockPtyProcess();
-			const mockProcess2 = createMockPtyProcess();
+			const mockTmuxSession1 = createMockTmuxSession("session-1");
+			const mockTmuxSession2 = createMockTmuxSession("session-2");
 
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as IPty,
+					tmuxSession: mockTmuxSession1,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -109,7 +112,7 @@ describe("useSessionManager", () => {
 			act(() => {
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as IPty,
+					tmuxSession: mockTmuxSession2,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -126,14 +129,14 @@ describe("useSessionManager", () => {
 	describe("セッション削除", () => {
 		it("指定されたセッションを削除できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess1 = createMockPtyProcess();
-			const mockProcess2 = createMockPtyProcess();
+			const mockTmuxSession1 = createMockTmuxSession("session-1");
+			const mockTmuxSession2 = createMockTmuxSession("session-2");
 
 			// セッションを2つ追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as IPty,
+					tmuxSession: mockTmuxSession1,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -141,7 +144,7 @@ describe("useSessionManager", () => {
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as IPty,
+					tmuxSession: mockTmuxSession2,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -160,12 +163,12 @@ describe("useSessionManager", () => {
 
 		it("存在しないセッションIDで削除しても何も起こらない", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -184,12 +187,12 @@ describe("useSessionManager", () => {
 	describe("セッション検索", () => {
 		it("存在するセッションを見つけることができる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -200,7 +203,7 @@ describe("useSessionManager", () => {
 			const session = result.current.findSession("session-1");
 			expect(session).toBeDefined();
 			expect(session?.id).toBe("session-1");
-			expect(session?.process).toBe(mockProcess);
+			expect(session?.tmuxSession).toBe(mockTmuxSession);
 		});
 
 		it("存在しないセッションの場合はundefinedを返す", () => {
@@ -247,13 +250,13 @@ describe("useSessionManager", () => {
 	describe("セッション出力の追加", () => {
 		it("指定されたセッションに出力を追加できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			// セッションを追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -272,13 +275,13 @@ describe("useSessionManager", () => {
 
 		it("複数の出力を順番に追加できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			// セッションを追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -303,13 +306,13 @@ describe("useSessionManager", () => {
 
 		it("既存の出力がある場合は追加される", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			// 既存の出力があるセッションを追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [Buffer.from("Existing output\n")],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -331,13 +334,13 @@ describe("useSessionManager", () => {
 
 		it("存在しないセッションIDに対しては何も起こらない", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess = createMockPtyProcess();
+			const mockTmuxSession = createMockTmuxSession();
 
 			// セッションを追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess as IPty,
+					tmuxSession: mockTmuxSession,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -360,14 +363,14 @@ describe("useSessionManager", () => {
 
 		it("複数のセッションで独立して出力を管理できる", () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess1 = createMockPtyProcess();
-			const mockProcess2 = createMockPtyProcess();
+			const mockTmuxSession1 = createMockTmuxSession("session-1");
+			const mockTmuxSession2 = createMockTmuxSession("session-2");
 
 			// 2つのセッションを追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as IPty,
+					tmuxSession: mockTmuxSession1,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -375,7 +378,7 @@ describe("useSessionManager", () => {
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as IPty,
+					tmuxSession: mockTmuxSession2,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -411,16 +414,16 @@ describe("useSessionManager", () => {
 	});
 
 	describe("全セッション終了", () => {
-		it("すべてのセッションのプロセスを終了し、リストをクリアする", () => {
+		it("すべてのセッションのプロセスを終了し、リストをクリアする", async () => {
 			const { result } = renderHook(() => useSessionManager());
-			const mockProcess1 = createMockPtyProcess();
-			const mockProcess2 = createMockPtyProcess();
+			const mockTmuxSession1 = createMockTmuxSession("session-1");
+			const mockTmuxSession2 = createMockTmuxSession("session-2");
 
 			// セッションを2つ追加
 			act(() => {
 				result.current.addSession({
 					id: "session-1",
-					process: mockProcess1 as IPty,
+					tmuxSession: mockTmuxSession1,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -428,7 +431,7 @@ describe("useSessionManager", () => {
 				});
 				result.current.addSession({
 					id: "session-2",
-					process: mockProcess2 as IPty,
+					tmuxSession: mockTmuxSession2,
 					outputs: [],
 					lastUpdated: new Date(),
 					status: "Idle",
@@ -441,8 +444,10 @@ describe("useSessionManager", () => {
 				result.current.killAllSessions();
 			});
 
-			expect(mockProcess1.kill).toHaveBeenCalledTimes(1);
-			expect(mockProcess2.kill).toHaveBeenCalledTimes(1);
+			const { killSession } = await import("../utils/tmuxUtils.js");
+			expect(killSession).toHaveBeenCalledWith(mockTmuxSession1);
+			expect(killSession).toHaveBeenCalledWith(mockTmuxSession2);
+			expect(killSession).toHaveBeenCalledTimes(2);
 			expect(result.current.sessions).toHaveLength(0);
 		});
 

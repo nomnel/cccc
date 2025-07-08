@@ -1,29 +1,33 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TmuxSession } from "../utils/tmuxUtils.js";
 
-// node-ptyのモック
-const mockPtyProcess = {
-	onData: vi.fn(),
-	onExit: vi.fn(),
-	write: vi.fn(),
-	resize: vi.fn(),
-	kill: vi.fn(),
-	clear: vi.fn(),
-	pause: vi.fn(),
-	resume: vi.fn(),
-	pid: 1234,
-	cols: 80,
-	rows: 24,
-	process: "bash",
-	handleFlowControl: false,
-	ptyProcess: null,
-	exitCode: null,
-	signalCode: null,
+// TmuxSessionのモック
+const mockTmuxSession: TmuxSession = {
+	sessionName: "test-session",
+	paneName: "test-pane",
+	lastCapturedLine: 0,
+	outputMonitor: undefined,
 };
 
-const mockPty = {
-	spawn: vi.fn(() => mockPtyProcess),
-};
+// tmuxUtilsのモック
+vi.mock("../utils/tmuxUtils.js", () => ({
+	createTmuxSession: vi.fn(() => mockTmuxSession),
+	sendInput: vi.fn(),
+	captureOutput: vi.fn(() => "test output"),
+	captureIncrementalOutput: vi.fn(() => ({ output: "incremental output", newLastLine: 10 })),
+	resizePane: vi.fn(),
+	isSessionRunning: vi.fn(() => true),
+	hasCommandExited: vi.fn(() => false),
+	killSession: vi.fn(),
+	createOutputMonitor: vi.fn(() => ({
+		stdout: { on: vi.fn() },
+		on: vi.fn(),
+		kill: vi.fn(),
+		killed: false,
+	})),
+	getCurrentTerminalDimensions: vi.fn(() => ({ cols: 120, rows: 30 })),
+}));
 
 // プロセスモック
 const mockStdout = {
@@ -52,7 +56,6 @@ const mockProcess = {
 
 // グローバルモック
 vi.stubGlobal("process", mockProcess);
-vi.mock("node-pty", () => ({ default: mockPty }));
 
 describe("useTerminalController", () => {
 	beforeEach(() => {
@@ -75,10 +78,10 @@ describe("useTerminalController", () => {
 		expect(typeof TERMINAL_CONFIG.XTERM_NAME).toBe("string");
 	});
 
-	it("node-ptyモジュールが正しく読み込める", async () => {
-		// node-ptyのインポートテスト
+	it("tmuxUtilsモジュールが正しく読み込める", async () => {
+		// tmuxUtilsのインポートテスト
 		expect(async () => {
-			await import("node-pty");
+			await import("../utils/tmuxUtils.js");
 		}).not.toThrow();
 	});
 
@@ -107,13 +110,13 @@ describe("useTerminalController", () => {
 	});
 
 	describe("PTYプロセス作成", () => {
-		it("createPtyProcess関数が提供される", async () => {
+		it("createTmuxProcess関数が提供される", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			expect(typeof result.current.createPtyProcess).toBe("function");
+			expect(typeof result.current.createTmuxProcess).toBe("function");
 		});
 
 		it("引数なしでPTYプロセスを作成できる", async () => {
@@ -122,16 +125,16 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			const ptyProcess = result.current.createPtyProcess();
+			const { createTmuxSession } = await import("../utils/tmuxUtils.js");
+			const tmuxSession = result.current.createTmuxProcess("test-session-1");
 
-			expect(mockPty.spawn).toHaveBeenCalledWith("claude", [], {
-				name: "xterm-color",
-				cols: 120,
-				rows: 30,
-				cwd: "/test/dir",
-				env: { TEST: "value" },
-			});
-			expect(ptyProcess).toBe(mockPtyProcess);
+			expect(createTmuxSession).toHaveBeenCalledWith(
+				"test-session-1",
+				"claude",
+				"/test/dir",
+				{ TEST: "value" },
+			);
+			expect(tmuxSession).toBe(mockTmuxSession);
 		});
 
 		it("引数を指定してPTYプロセスを作成できる", async () => {
@@ -140,17 +143,17 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
+			const { createTmuxSession } = await import("../utils/tmuxUtils.js");
 			const args = ["--verbose", "--config=test"];
-			const ptyProcess = result.current.createPtyProcess(args);
+			const tmuxSession = result.current.createTmuxProcess("test-session-2", args);
 
-			expect(mockPty.spawn).toHaveBeenCalledWith("claude", args, {
-				name: "xterm-color",
-				cols: 120,
-				rows: 30,
-				cwd: "/test/dir",
-				env: { TEST: "value" },
-			});
-			expect(ptyProcess).toBe(mockPtyProcess);
+			expect(createTmuxSession).toHaveBeenCalledWith(
+				"test-session-2",
+				"claude --verbose --config=test",
+				"/test/dir",
+				{ TEST: "value" },
+			);
+			expect(tmuxSession).toBe(mockTmuxSession);
 		});
 
 		it("標準出力サイズが未定義の場合はデフォルト値を使用する", async () => {
@@ -170,14 +173,19 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			const ptyProcess = result.current.createPtyProcess();
+			const { createTmuxSession, resizePane } = await import("../utils/tmuxUtils.js");
+			const tmuxSession = result.current.createTmuxProcess("test-session-3");
 
-			expect(mockPty.spawn).toHaveBeenCalledWith("claude", [], {
-				name: "xterm-color",
-				cols: 80, // デフォルト値
-				rows: 24, // デフォルト値
-				cwd: "/test/dir",
-				env: { TEST: "value" },
+			expect(createTmuxSession).toHaveBeenCalledWith(
+				"test-session-3",
+				"claude",
+				"/test/dir",
+				{ TEST: "value" },
+			);
+			// デフォルトサイズでリサイズされることを確認
+			expect(resizePane).toHaveBeenCalledWith(mockTmuxSession, {
+				cols: 80,
+				rows: 24,
 			});
 		});
 	});
@@ -211,17 +219,17 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
+			const { createOutputMonitor } = await import("../utils/tmuxUtils.js");
 			const mockOnData = vi.fn();
 			const mockIsActive = vi.fn().mockReturnValue(true);
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
 
 			const dataDisposable = result.current.setupPersistentDataListener(
-				mockPtyProcess,
+				mockTmuxSession,
 				mockOnData,
 				mockIsActive,
 			);
 
-			expect(mockPtyProcess.onData).toHaveBeenCalled();
+			expect(createOutputMonitor).toHaveBeenCalledWith(mockTmuxSession, expect.any(Function));
 			expect(dataDisposable).toBeDefined();
 			expect(typeof dataDisposable.dispose).toBe("function");
 		});
@@ -232,10 +240,10 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			// No need to mock onData for tmux implementation
 
 			const listeners =
-				result.current.setupActiveSessionListeners(mockPtyProcess);
+				result.current.setupActiveSessionListeners(mockTmuxSession);
 
 			expect(mockStdin.setRawMode).toHaveBeenCalledWith(true);
 			expect(mockStdin.resume).toHaveBeenCalled();
@@ -251,10 +259,10 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			// No need to mock onData for tmux implementation
 
 			const listeners =
-				result.current.setupActiveSessionListeners(mockPtyProcess);
+				result.current.setupActiveSessionListeners(mockTmuxSession);
 
 			expect(mockProcess.on).toHaveBeenCalledWith(
 				"SIGWINCH",
@@ -269,17 +277,24 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
+			const { createOutputMonitor } = await import("../utils/tmuxUtils.js");
 			const mockOnData = vi.fn();
 			const mockIsActive = vi.fn();
 			let onDataCallback: (data: string) => void = () => {};
 
-			mockPtyProcess.onData.mockImplementation((callback) => {
+			// Mock the output monitor to capture the callback
+			(createOutputMonitor as any).mockImplementation((session: any, callback: (data: string) => void) => {
 				onDataCallback = callback;
-				return { dispose: vi.fn() };
+				return {
+					stdout: { on: vi.fn() },
+					on: vi.fn(),
+					kill: vi.fn(),
+					killed: false,
+				};
 			});
 
 			result.current.setupPersistentDataListener(
-				mockPtyProcess,
+				mockTmuxSession,
 				mockOnData,
 				mockIsActive,
 			);
@@ -320,9 +335,9 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			// No need to mock onData for tmux implementation
 
-			result.current.setupActiveSessionListeners(mockPtyProcess);
+			result.current.setupActiveSessionListeners(mockTmuxSession);
 
 			expect(mockProcessNoTTY.stdin.setRawMode).not.toHaveBeenCalled();
 			expect(mockProcessNoTTY.stdin.resume).toHaveBeenCalled();
@@ -330,27 +345,44 @@ describe("useTerminalController", () => {
 	});
 
 	describe("統合テスト", () => {
-		it("アクティブセッションのデータ出力が標準出力に書き込まれる", async () => {
+		it("永続的データリスナーがアクティブ時にデータを標準出力に書き込む", async () => {
 			const { useTerminalController } = await import(
 				"./useTerminalController.js"
 			);
 			const { result } = renderHook(() => useTerminalController());
 
+			const { createOutputMonitor } = await import("../utils/tmuxUtils.js");
 			const testData = "test output data";
-			let onDataCallback: (data: string) => void = () => {};
+			let capturedCallback: (data: string) => void = () => {};
 
-			mockPtyProcess.onData.mockImplementation((callback) => {
-				onDataCallback = callback;
-				return { dispose: vi.fn() };
+			// Mock the output monitor to capture the callback
+			(createOutputMonitor as any).mockImplementation((session: any, callback: (data: string) => void) => {
+				capturedCallback = callback;
+				return {
+					stdout: { on: vi.fn() },
+					on: vi.fn(),
+					kill: vi.fn(),
+					killed: false,
+				};
 			});
 
-			result.current.setupActiveSessionListeners(mockPtyProcess);
+			const mockOnData = vi.fn();
+			const mockIsActive = vi.fn().mockReturnValue(true); // Session is active
 
-			// データ出力をシミュレート
+			result.current.setupPersistentDataListener(
+				mockTmuxSession,
+				mockOnData,
+				mockIsActive,
+			);
+
+			// Simulate data from tmux
 			act(() => {
-				onDataCallback(testData);
+				capturedCallback(testData);
 			});
 
+			// Verify data was passed to onData callback
+			expect(mockOnData).toHaveBeenCalledWith(testData);
+			// Verify data was written to stdout (because session is active)
 			expect(mockStdout.write).toHaveBeenCalledWith(testData);
 		});
 
@@ -360,10 +392,10 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			// No need to mock onData for tmux implementation
 
 			const listeners =
-				result.current.setupActiveSessionListeners(mockPtyProcess);
+				result.current.setupActiveSessionListeners(mockTmuxSession);
 
 			const testInput = Buffer.from("test input");
 
@@ -372,7 +404,8 @@ describe("useTerminalController", () => {
 				listeners.handleInput?.(testInput);
 			});
 
-			expect(mockPtyProcess.write).toHaveBeenCalledWith("test input");
+			const { sendInput } = await import("../utils/tmuxUtils.js");
+			expect(sendInput).toHaveBeenCalledWith(mockTmuxSession, "test input");
 		});
 
 		it("リサイズイベントがPTYプロセスに正しく伝達される", async () => {
@@ -381,17 +414,21 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			mockPtyProcess.onData.mockReturnValue({ dispose: vi.fn() });
+			// No need to mock onData for tmux implementation
 
 			const listeners =
-				result.current.setupActiveSessionListeners(mockPtyProcess);
+				result.current.setupActiveSessionListeners(mockTmuxSession);
 
 			// リサイズをシミュレート
 			act(() => {
 				listeners.handleResize?.();
 			});
 
-			expect(mockPtyProcess.resize).toHaveBeenCalledWith(120, 30);
+			const { resizePane } = await import("../utils/tmuxUtils.js");
+			expect(resizePane).toHaveBeenCalledWith(mockTmuxSession, {
+				cols: 120,
+				rows: 30,
+			});
 		});
 	});
 });
