@@ -47,6 +47,7 @@ A terminal UI wrapper for Claude CLI that enables efficient management of multip
 
 - Node.js 18 or higher
 - [Claude CLI](https://docs.anthropic.com/claude/docs/claude-cli) installed
+- tmux (terminal multiplexer) installed
 
 ## Installation
 
@@ -174,7 +175,7 @@ When creating a new session, you can select a settings file which will be:
 ## Testing
 
 This project uses **Vitest** for a comprehensive test suite.
-**All 24 tests passing** ✅
+**All 194 tests passing** ✅
 
 ### Running Tests
 
@@ -190,6 +191,8 @@ pnpm test:coverage
 ```
 
 ### Test Structure
+
+The project maintains comprehensive test coverage with **194 tests** across 15 test files, ensuring reliability of all components and utilities.
 
 #### ✅ Utility Function Tests (`src/utils.test.ts`)
 
@@ -247,6 +250,7 @@ src/
 ├── utils/                # Utility functions
 │   ├── configUtils.ts    # Repository configuration
 │   ├── gitUtils.ts       # Git operations
+│   ├── tmuxUtils.ts      # Tmux integration
 │   └── ...
 ├── hooks/                # Custom hooks
 │   ├── useSessionManager.ts
@@ -257,15 +261,7 @@ src/
 │   └── ...
 ├── Menu.tsx              # Menu component
 ├── index.tsx             # Main application
-└── test/                 # Test files
-    ├── setup.ts
-    ├── utils.test.ts
-    ├── Menu.test.tsx
-    ├── App.test.tsx
-    └── hooks/
-        ├── useSessionManager.test.ts
-        ├── useEventListeners.test.ts
-        └── useTerminalController.test.ts
+└── test files (*.test.ts, *.test.tsx)
 ```
 
 ### 🏗️ Design Principles
@@ -303,6 +299,14 @@ src/
    - Session is preserved and can be resumed
 
 ## Changelog
+
+### Version 0.3.0
+- **Major Change**: Replaced node-pty with tmux for better terminal session management
+- **Improved**: Real-time session output display with better performance
+- **Fixed**: Session display width now automatically adjusts to window size
+- **Fixed**: Proper cleanup of event listeners when tmux sessions exit naturally
+- **Fixed**: Better handling of duplicate tmux session errors on startup
+- **Enhanced**: More reliable session persistence and background process management
 
 ### Version 0.2.7
 - **Removed**: Built-in notification feature in favor of Claude Code hooks - users can now configure notifications through Claude Code's hooks system for more flexibility
@@ -356,7 +360,7 @@ pnpm prepublishOnly # Build and test before publish
 - **UI Framework**: Ink v3 (React for CLI)
 - **Language**: TypeScript
 - **Test Framework**: Vitest
-- **Process Management**: node-pty (pseudo-terminal support)
+- **Process Management**: tmux (terminal multiplexer)
 - **Linter/Formatter**: Biome
 - **Key Libraries**:
   - `strip-ansi`: ANSI escape sequence handling
