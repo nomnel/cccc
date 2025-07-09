@@ -13,7 +13,11 @@ import { useSessionManager } from "./hooks/useSessionManager.js";
 import { useTerminalController } from "./hooks/useTerminalController.js";
 import type { Session } from "./types.js";
 import { isMenuOption } from "./utils.js";
-import { cleanupOrphanedSessions, hasCommandExited, isSessionRunning } from "./utils/tmuxUtils.js";
+import {
+	cleanupOrphanedSessions,
+	hasCommandExited,
+	isSessionRunning,
+} from "./utils/tmuxUtils.js";
 import {
 	createWorktree,
 	createWorktreeFromRef,
@@ -62,15 +66,15 @@ const App: React.FC = () => {
 		setupActiveSessionListeners,
 	} = useTerminalController();
 	const { exit } = useApp();
-	
+
 	// Use refs to get the latest values in callbacks
 	const screenRef = React.useRef(currentScreen);
 	const sessionIdRef = React.useRef(currentSessionId);
-	
+
 	React.useEffect(() => {
 		screenRef.current = currentScreen;
 	}, [currentScreen]);
-	
+
 	React.useEffect(() => {
 		sessionIdRef.current = currentSessionId;
 	}, [currentSessionId]);
@@ -122,59 +126,68 @@ const App: React.FC = () => {
 				const env = settingsPath
 					? { CLAUDE_SETTINGS_PATH: settingsPath }
 					: undefined;
-				const tmuxSession = createTmuxProcess(sessionId, args, workingDirectory, env);
+				const tmuxSession = createTmuxProcess(
+					sessionId,
+					args,
+					workingDirectory,
+					env,
+				);
 
-			// Set up persistent data listener that always captures output
-			const dataDisposable = setupPersistentDataListener(
-				tmuxSession,
-				(data) => {
-					appendOutput(sessionId, Buffer.from(data));
-				},
-				() => {
-					const isActive = screenRef.current === SCREENS.CLAUDE && sessionIdRef.current === sessionId;
-					return isActive;
-				},
-			);
+				// Set up persistent data listener that always captures output
+				const dataDisposable = setupPersistentDataListener(
+					tmuxSession,
+					(data) => {
+						appendOutput(sessionId, Buffer.from(data));
+					},
+					() => {
+						const isActive =
+							screenRef.current === SCREENS.CLAUDE &&
+							sessionIdRef.current === sessionId;
+						return isActive;
+					},
+				);
 
-			// Set up exit handler by polling tmux session status
-			const checkExitInterval = setInterval(() => {
-				if (!isSessionRunning(tmuxSession) || hasCommandExited(tmuxSession)) {
-					clearInterval(checkExitInterval);
-					dataDisposable.dispose();
-					removeSession(sessionId);
-					clearScreen();
-					switchToMenu();
-				}
-			}, 1000);
+				// Set up exit handler by polling tmux session status
+				const checkExitInterval = setInterval(() => {
+					if (!isSessionRunning(tmuxSession) || hasCommandExited(tmuxSession)) {
+						clearInterval(checkExitInterval);
+						dataDisposable.dispose();
+						removeSession(sessionId);
+						cleanupListeners();
+						clearScreen();
+						switchToMenu();
+					}
+				}, 1000);
 
-			// Set up active session listeners
-			const listeners = setupActiveSessionListeners(tmuxSession);
-			setListeners(listeners);
+				// Set up active session listeners
+				const listeners = setupActiveSessionListeners(tmuxSession);
+				setListeners(listeners);
 
-			// Get the current branch and repository name for this session
-			const branch = getCurrentBranch(workingDirectory);
-			const repoName = getRepositoryName(workingDirectory);
+				// Get the current branch and repository name for this session
+				const branch = getCurrentBranch(workingDirectory);
+				const repoName = getRepositoryName(workingDirectory);
 
-			const newSession: Session = {
-				id: sessionId,
-				tmuxSession,
-				outputs: [],
-				lastUpdated: new Date(),
-				status: "Idle",
-				preview: "",
-				workingDirectory,
-				branch: branch || undefined,
-				repoName: repoName || undefined,
-				settingsPath,
-				settingsName,
-				dataDisposable,
-				exitCheckInterval: checkExitInterval,
-			};
-			addSession(newSession);
-			switchToSession(sessionId);
+				const newSession: Session = {
+					id: sessionId,
+					tmuxSession,
+					outputs: [],
+					lastUpdated: new Date(),
+					status: "Idle",
+					preview: "",
+					workingDirectory,
+					branch: branch || undefined,
+					repoName: repoName || undefined,
+					settingsPath,
+					settingsName,
+					dataDisposable,
+					exitCheckInterval: checkExitInterval,
+				};
+				addSession(newSession);
+				switchToSession(sessionId);
 			} catch (error) {
 				// Display error to user and return to menu
-				const errorMessage = error instanceof Error ? error.message : String(error);
+				const errorMessage =
+					error instanceof Error ? error.message : String(error);
 				setError(errorMessage);
 				clearScreen();
 				switchToMenu();
