@@ -24,7 +24,7 @@ export const createTmuxSession = (
 	dimensions?: TmuxDimensions,
 ): TmuxSession => {
 	const paneName = `${sessionName}-pane`;
-	
+
 	// Check if session already exists and kill it if it does
 	try {
 		execSync(`tmux has-session -t "${sessionName}" 2>/dev/null`, {
@@ -41,16 +41,16 @@ export const createTmuxSession = (
 	} catch {
 		// Session doesn't exist, which is what we want
 	}
-	
+
 	// Get terminal dimensions
 	const { cols, rows } = dimensions || getCurrentTerminalDimensions();
-	
+
 	// Create tmux session with the command and initial dimensions
 	try {
 		const tmuxCommand = `tmux new-session -d -s "${sessionName}" -n "${paneName}" -c "${cwd}" -x ${cols} -y ${rows} ${command}`;
-		
+
 		// Execute with environment variables passed through execSync's env option
-		execSync(tmuxCommand, { 
+		execSync(tmuxCommand, {
 			stdio: "pipe",
 			env: env,
 		});
@@ -60,17 +60,21 @@ export const createTmuxSession = (
 		try {
 			execSync("which tmux", { stdio: "pipe", env });
 		} catch {
-			throw new Error("tmux is not installed. Please install tmux to use this application.");
+			throw new Error(
+				"tmux is not installed. Please install tmux to use this application.",
+			);
 		}
 		// Check if the command (claude) exists
 		try {
 			execSync(`which ${command.split(" ")[0]}`, { stdio: "pipe", env });
 		} catch {
-			throw new Error(`Command '${command.split(" ")[0]}' not found. Make sure Claude CLI is installed and in your PATH.`);
+			throw new Error(
+				`Command '${command.split(" ")[0]}' not found. Make sure Claude CLI is installed and in your PATH.`,
+			);
 		}
 		throw new Error(`Failed to create tmux session: ${errorMessage}`);
 	}
-	
+
 	return {
 		sessionName,
 		paneName,
@@ -89,10 +93,13 @@ export const sendInput = (session: TmuxSession, data: string): void => {
 			.replace(/"/g, '\\"')
 			.replace(/\$/g, "\\$")
 			.replace(/`/g, "\\`");
-		
-		execSync(`tmux send-keys -t "${session.sessionName}:${session.paneName}" "${escaped}"`, {
-			stdio: "pipe",
-		});
+
+		execSync(
+			`tmux send-keys -t "${session.sessionName}:${session.paneName}" "${escaped}"`,
+			{
+				stdio: "pipe",
+			},
+		);
 	} catch (error) {
 		throw new Error(`Failed to send input to tmux session: ${error}`);
 	}
@@ -105,7 +112,7 @@ export const captureOutput = (session: TmuxSession): string => {
 	try {
 		const output = execSync(
 			`tmux capture-pane -t "${session.sessionName}:${session.paneName}" -p -S -`,
-			{ encoding: "utf8" }
+			{ encoding: "utf8" },
 		);
 		return output;
 	} catch (error) {
@@ -116,27 +123,29 @@ export const captureOutput = (session: TmuxSession): string => {
 /**
  * Captures incremental output from a tmux pane (only new lines since last capture)
  */
-export const captureIncrementalOutput = (session: TmuxSession): { output: string; newLastLine: number } => {
+export const captureIncrementalOutput = (
+	session: TmuxSession,
+): { output: string; newLastLine: number } => {
 	try {
 		// Get current pane history size
 		const historySize = parseInt(
 			execSync(
 				`tmux display-message -t "${session.sessionName}:${session.paneName}" -p "#{history_size}"`,
-				{ encoding: "utf8" }
+				{ encoding: "utf8" },
 			).trim(),
-			10
+			10,
 		);
-		
+
 		if (session.lastCapturedLine >= historySize) {
 			return { output: "", newLastLine: historySize };
 		}
-		
+
 		// Capture only new lines
 		const output = execSync(
 			`tmux capture-pane -t "${session.sessionName}:${session.paneName}" -p -S ${session.lastCapturedLine} -E ${historySize - 1}`,
-			{ encoding: "utf8" }
+			{ encoding: "utf8" },
 		);
-		
+
 		return { output, newLastLine: historySize };
 	} catch (error) {
 		throw new Error(`Failed to capture incremental tmux output: ${error}`);
@@ -146,11 +155,14 @@ export const captureIncrementalOutput = (session: TmuxSession): { output: string
 /**
  * Resizes a tmux pane
  */
-export const resizePane = (session: TmuxSession, dimensions: TmuxDimensions): void => {
+export const resizePane = (
+	session: TmuxSession,
+	dimensions: TmuxDimensions,
+): void => {
 	try {
 		execSync(
 			`tmux resize-pane -t "${session.sessionName}:${session.paneName}" -x ${dimensions.cols} -y ${dimensions.rows}`,
-			{ stdio: "pipe" }
+			{ stdio: "pipe" },
 		);
 	} catch (error) {
 		throw new Error(`Failed to resize tmux pane: ${error}`);
@@ -178,9 +190,9 @@ export const hasCommandExited = (session: TmuxSession): boolean => {
 	try {
 		const paneInfo = execSync(
 			`tmux list-panes -t "${session.sessionName}:${session.paneName}" -F "#{pane_dead}"`,
-			{ encoding: "utf8" }
+			{ encoding: "utf8" },
 		).trim();
-		
+
 		return paneInfo === "1";
 	} catch {
 		return true;
@@ -194,18 +206,21 @@ export const killSession = (session: TmuxSession): void => {
 	try {
 		// Stop pipe-pane first
 		try {
-			execSync(`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`, {
-				stdio: "pipe",
-			});
+			execSync(
+				`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`,
+				{
+					stdio: "pipe",
+				},
+			);
 		} catch {
 			// Ignore if it fails
 		}
-		
+
 		// Kill the output monitor if it exists
 		if (session.outputMonitor && !session.outputMonitor.killed) {
 			session.outputMonitor.kill();
 		}
-		
+
 		// Clean up FIFO
 		const pipePath = `/tmp/tmux-monitor-${session.sessionName}`;
 		try {
@@ -213,7 +228,7 @@ export const killSession = (session: TmuxSession): void => {
 		} catch {
 			// Ignore cleanup errors
 		}
-		
+
 		execSync(`tmux kill-session -t "${session.sessionName}"`, {
 			stdio: "pipe",
 		});
@@ -231,13 +246,16 @@ export const createOutputMonitor = (
 ): ChildProcess => {
 	// First, ensure pipe-pane is off
 	try {
-		execSync(`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`, {
-			stdio: "pipe",
-		});
+		execSync(
+			`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`,
+			{
+				stdio: "pipe",
+			},
+		);
 	} catch {
 		// Ignore if it fails (pipe might not be active)
 	}
-	
+
 	// Create a FIFO pipe for output
 	const pipePath = `/tmp/tmux-monitor-${session.sessionName}`;
 	try {
@@ -247,17 +265,17 @@ export const createOutputMonitor = (
 	} catch {
 		// Ignore errors
 	}
-	
+
 	// Start the reader first (non-blocking)
 	const monitor = spawn("cat", [pipePath]);
-	
+
 	// Give the reader a moment to connect to the FIFO
 	setTimeout(() => {
 		// Start piping tmux output to the FIFO
 		try {
 			execSync(
 				`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -o "cat >> ${pipePath}"`,
-				{ stdio: "pipe" }
+				{ stdio: "pipe" },
 			);
 		} catch (error) {
 			// Kill the monitor if pipe-pane fails
@@ -266,22 +284,25 @@ export const createOutputMonitor = (
 			}
 		}
 	}, 100);
-	
+
 	monitor.stdout?.on("data", (chunk: Buffer) => {
 		onData(chunk.toString());
 	});
-	
+
 	monitor.on("error", (error) => {
 		// Try to clean up and notify about the error
 		try {
-			execSync(`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`, {
-				stdio: "pipe",
-			});
+			execSync(
+				`tmux pipe-pane -t "${session.sessionName}:${session.paneName}" -O`,
+				{
+					stdio: "pipe",
+				},
+			);
 		} catch {
 			// Ignore if it fails
 		}
 	});
-	
+
 	monitor.on("exit", () => {
 		// Clean up FIFO
 		try {
@@ -290,7 +311,7 @@ export const createOutputMonitor = (
 			// Ignore cleanup errors
 		}
 	});
-	
+
 	return monitor;
 };
 
@@ -313,8 +334,10 @@ export const cleanupOrphanedSessions = (sessionPrefix: string): void => {
 		const sessions = execSync("tmux list-sessions -F '#{session_name}'", {
 			encoding: "utf8",
 			stdio: "pipe",
-		}).trim().split("\n");
-		
+		})
+			.trim()
+			.split("\n");
+
 		// Kill any sessions that match our prefix
 		for (const session of sessions) {
 			if (session.startsWith(sessionPrefix)) {

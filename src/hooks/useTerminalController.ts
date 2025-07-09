@@ -23,14 +23,20 @@ export const useTerminalController = () => {
 	}, []);
 
 	const createTmuxProcess = React.useCallback(
-		(sessionId: string, args: string[] = [], cwd?: string, env?: Record<string, string>) => {
-			const command = args.length > 0 
-				? `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`
-				: TERMINAL_CONFIG.PROCESS_NAME;
-			
+		(
+			sessionId: string,
+			args: string[] = [],
+			cwd?: string,
+			env?: Record<string, string>,
+		) => {
+			const command =
+				args.length > 0
+					? `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`
+					: TERMINAL_CONFIG.PROCESS_NAME;
+
 			// Get current terminal dimensions to pass to tmux
 			const dimensions = getCurrentTerminalDimensions();
-			
+
 			const tmuxSession = createTmuxSession(
 				sessionId,
 				command,
@@ -38,7 +44,7 @@ export const useTerminalController = () => {
 				{ ...process.env, ...env } as Record<string, string>,
 				dimensions,
 			);
-			
+
 			return tmuxSession;
 		},
 		[],
@@ -59,10 +65,10 @@ export const useTerminalController = () => {
 					process.stdout.write(data);
 				}
 			});
-			
+
 			// Store the monitor in the session for cleanup
 			tmuxSession.outputMonitor = outputMonitor;
-			
+
 			return {
 				dispose: () => {
 					if (outputMonitor && !outputMonitor.killed) {

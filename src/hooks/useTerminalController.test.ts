@@ -15,7 +15,10 @@ vi.mock("../utils/tmuxUtils.js", () => ({
 	createTmuxSession: vi.fn(() => mockTmuxSession),
 	sendInput: vi.fn(),
 	captureOutput: vi.fn(() => "test output"),
-	captureIncrementalOutput: vi.fn(() => ({ output: "incremental output", newLastLine: 10 })),
+	captureIncrementalOutput: vi.fn(() => ({
+		output: "incremental output",
+		newLastLine: 10,
+	})),
 	resizePane: vi.fn(),
 	isSessionRunning: vi.fn(() => true),
 	hasCommandExited: vi.fn(() => false),
@@ -146,7 +149,10 @@ describe("useTerminalController", () => {
 
 			const { createTmuxSession } = await import("../utils/tmuxUtils.js");
 			const args = ["--verbose", "--config=test"];
-			const tmuxSession = result.current.createTmuxProcess("test-session-2", args);
+			const tmuxSession = result.current.createTmuxProcess(
+				"test-session-2",
+				args,
+			);
 
 			expect(createTmuxSession).toHaveBeenCalledWith(
 				"test-session-2",
@@ -234,7 +240,10 @@ describe("useTerminalController", () => {
 				mockIsActive,
 			);
 
-			expect(createOutputMonitor).toHaveBeenCalledWith(mockTmuxSession, expect.any(Function));
+			expect(createOutputMonitor).toHaveBeenCalledWith(
+				mockTmuxSession,
+				expect.any(Function),
+			);
 			expect(dataDisposable).toBeDefined();
 			expect(typeof dataDisposable.dispose).toBe("function");
 		});
@@ -287,15 +296,17 @@ describe("useTerminalController", () => {
 			let onDataCallback: (data: string) => void = () => {};
 
 			// Mock the output monitor to capture the callback
-			(createOutputMonitor as any).mockImplementation((session: any, callback: (data: string) => void) => {
-				onDataCallback = callback;
-				return {
-					stdout: { on: vi.fn() },
-					on: vi.fn(),
-					kill: vi.fn(),
-					killed: false,
-				};
-			});
+			(createOutputMonitor as any).mockImplementation(
+				(session: any, callback: (data: string) => void) => {
+					onDataCallback = callback;
+					return {
+						stdout: { on: vi.fn() },
+						on: vi.fn(),
+						kill: vi.fn(),
+						killed: false,
+					};
+				},
+			);
 
 			result.current.setupPersistentDataListener(
 				mockTmuxSession,
@@ -360,15 +371,17 @@ describe("useTerminalController", () => {
 			let capturedCallback: (data: string) => void = () => {};
 
 			// Mock the output monitor to capture the callback
-			(createOutputMonitor as any).mockImplementation((session: any, callback: (data: string) => void) => {
-				capturedCallback = callback;
-				return {
-					stdout: { on: vi.fn() },
-					on: vi.fn(),
-					kill: vi.fn(),
-					killed: false,
-				};
-			});
+			(createOutputMonitor as any).mockImplementation(
+				(session: any, callback: (data: string) => void) => {
+					capturedCallback = callback;
+					return {
+						stdout: { on: vi.fn() },
+						on: vi.fn(),
+						kill: vi.fn(),
+						killed: false,
+					};
+				},
+			);
 
 			const mockOnData = vi.fn();
 			const mockIsActive = vi.fn().mockReturnValue(true); // Session is active

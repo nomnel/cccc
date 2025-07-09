@@ -67,26 +67,32 @@ async function main() {
 		default: {
 			// No command or unknown command - check if current directory is a git repo
 			const currentDir = process.cwd();
-			
+
 			// Check if current directory is a git repository
 			if (isGitRepo(currentDir)) {
 				// Check if it's already managed
 				const repositories = listRepositories();
 				const absolutePath = path.resolve(currentDir);
-				const isManaged = repositories.some(repo => repo.path === absolutePath);
-				
+				const isManaged = repositories.some(
+					(repo) => repo.path === absolutePath,
+				);
+
 				if (!isManaged) {
 					// Automatically add this repository to cccc management
 					try {
 						addRepository(currentDir);
-						console.log(`Automatically added current git repository to cccc: ${absolutePath}`);
+						console.log(
+							`Automatically added current git repository to cccc: ${absolutePath}`,
+						);
 					} catch (error) {
 						// If it fails to add, just continue without adding
-						console.error(`Warning: Could not auto-add repository: ${error instanceof Error ? error.message : String(error)}`);
+						console.error(
+							`Warning: Could not auto-add repository: ${error instanceof Error ? error.message : String(error)}`,
+						);
 					}
 				}
 			}
-			
+
 			// Import and run the main app
 			await import("./index.js");
 			break;

@@ -23,7 +23,7 @@ vi.mock("ink", () => {
 
 describe("Menu", () => {
 	let mockUseInput: ReturnType<typeof vi.fn>;
-	
+
 	// Mock TmuxSession for all tests
 	const mockTmuxSession: TmuxSession = {
 		sessionName: "test-session",
