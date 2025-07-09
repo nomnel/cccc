@@ -27,16 +27,17 @@ export const useTerminalController = () => {
 			const command = args.length > 0 
 				? `${TERMINAL_CONFIG.PROCESS_NAME} ${args.join(" ")}`
 				: TERMINAL_CONFIG.PROCESS_NAME;
+			
+			// Get current terminal dimensions to pass to tmux
+			const dimensions = getCurrentTerminalDimensions();
+			
 			const tmuxSession = createTmuxSession(
 				sessionId,
 				command,
 				cwd || process.cwd(),
 				{ ...process.env, ...env } as Record<string, string>,
+				dimensions,
 			);
-			
-			// Resize to current terminal dimensions
-			const dimensions = getCurrentTerminalDimensions();
-			resizePane(tmuxSession, dimensions);
 			
 			return tmuxSession;
 		},

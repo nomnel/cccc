@@ -133,6 +133,7 @@ describe("useTerminalController", () => {
 				"claude",
 				"/test/dir",
 				{ TEST: "value" },
+				{ cols: 120, rows: 30 },
 			);
 			expect(tmuxSession).toBe(mockTmuxSession);
 		});
@@ -152,6 +153,7 @@ describe("useTerminalController", () => {
 				"claude --verbose --config=test",
 				"/test/dir",
 				{ TEST: "value" },
+				{ cols: 120, rows: 30 },
 			);
 			expect(tmuxSession).toBe(mockTmuxSession);
 		});
@@ -180,7 +182,7 @@ describe("useTerminalController", () => {
 			);
 			const { result } = renderHook(() => useTerminalController());
 
-			const { createTmuxSession, resizePane } = await import("../utils/tmuxUtils.js");
+			const { createTmuxSession } = await import("../utils/tmuxUtils.js");
 			const tmuxSession = result.current.createTmuxProcess("test-session-3");
 
 			expect(createTmuxSession).toHaveBeenCalledWith(
@@ -188,12 +190,8 @@ describe("useTerminalController", () => {
 				"claude",
 				"/test/dir",
 				{ TEST: "value" },
+				{ cols: 80, rows: 24 },
 			);
-			// デフォルトサイズでリサイズされることを確認
-			expect(resizePane).toHaveBeenCalledWith(mockTmuxSession, {
-				cols: 80,
-				rows: 24,
-			});
 		});
 	});
 

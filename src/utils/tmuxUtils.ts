@@ -21,6 +21,7 @@ export const createTmuxSession = (
 	command: string,
 	cwd: string,
 	env: Record<string, string>,
+	dimensions?: TmuxDimensions,
 ): TmuxSession => {
 	const paneName = `${sessionName}-pane`;
 	
@@ -41,9 +42,12 @@ export const createTmuxSession = (
 		// Session doesn't exist, which is what we want
 	}
 	
-	// Create tmux session with the command
+	// Get terminal dimensions
+	const { cols, rows } = dimensions || getCurrentTerminalDimensions();
+	
+	// Create tmux session with the command and initial dimensions
 	try {
-		const tmuxCommand = `tmux new-session -d -s "${sessionName}" -n "${paneName}" -c "${cwd}" ${command}`;
+		const tmuxCommand = `tmux new-session -d -s "${sessionName}" -n "${paneName}" -c "${cwd}" -x ${cols} -y ${rows} ${command}`;
 		
 		// Execute with environment variables passed through execSync's env option
 		execSync(tmuxCommand, { 
